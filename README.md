@@ -1,5 +1,7 @@
 # HSLN archive — the June 2026 files, unchanged
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23690426.svg)](https://doi.org/10.5281/zenodo.23690426)
+
 This repository is a frozen record. It holds the files produced between 29 May and
 4 June 2026 during an attempt to design an efficient *heterotic spiking liquid network*
 (HSLN): a reservoir computer whose state lives on a modular curve, whose parameters are the
@@ -156,6 +158,9 @@ git clone git/hsln-2026-05.bundle hsln-may    # the history, with dates and mess
 
 Block times were read from a public block explorer and are recorded in `TIMESTAMPS.md`;
 anyone can re-read them from any Bitcoin node.
+
+An independent snapshot of release `v2026.06-archive` is archived at Zenodo,
+DOI [10.5281/zenodo.23690426](https://doi.org/10.5281/zenodo.23690426) (deposited 27 October 2026).
 
 ## Companion repositories
 

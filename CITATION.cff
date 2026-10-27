@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this archive, cite it as below."
+title: "HSLN archive: the June 2026 files, unchanged, with OpenTimestamps proofs"
+authors:
+  - family-names: Morley-Smith
+    given-names: Richard
+date-released: 2026-10-27
+version: v2026.06-archive
+doi: 10.5281/zenodo.23690426
+repository-code: https://github.com/rmorleysmith/hsln-archive
+license: Apache-2.0
