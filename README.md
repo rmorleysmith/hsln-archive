@@ -15,8 +15,8 @@ seed form is taken.
 Nothing in `files/` has been edited. Every file is covered either by an OpenTimestamps
 proof anchored in the Bitcoin blockchain, by a git history whose later state is so
 covered, or both. The companion repositories (the audit and the Lean formalisation,
-to be published alongside this archive) are where the mathematics is graded and, where it
-holds, machine-checked. This repository only establishes *what existed, when*.
+linked at the end) are where the mathematics is graded and, where it holds,
+machine-checked. This repository only establishes *what existed, when*.
 
 ## Provenance at a glance
 
@@ -159,11 +159,13 @@ anyone can re-read them from any Bitcoin node.
 
 ## Companion repositories
 
-- **The audit** (`Fugue/`): every claim in these files graded by evidence, with
-  reproductions.
-- **The formalisation** (`Formal/`): the parts of the corpus that survive, re-proved from
-  scratch in Lean 4 against Mathlib: 99 audited theorems, only Lean's three standard
-  axioms, no `sorry`.
+- **The audit**: [rmorleysmith/fugue](https://github.com/rmorleysmith/fugue), directory
+  `Fugue/`: every claim in these files graded by evidence, with reproductions.
+- **The formalisation**: [rmorleysmith/fugue-formal](https://github.com/rmorleysmith/fugue-formal):
+  the parts of the corpus that survive, re-proved from scratch in Lean 4 against Mathlib:
+  99 audited theorems, only Lean's three standard axioms, no `sorry`. With
+  [fugue-formal-pnt](https://github.com/rmorleysmith/fugue-formal-pnt) (Ingham's theorem)
+  and [palomar-ingham](https://github.com/rmorleysmith/palomar-ingham) (registry entries).
 - **The exposition**: in preparation.
 
 ## Licence
