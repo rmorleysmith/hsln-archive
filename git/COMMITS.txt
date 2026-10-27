@@ -1,0 +1,29 @@
+eaf2bc9ae072fbb320daaf7cb0f85f13fd9fdac0 2026-05-29T09:29:25+01:00 Initial commit: HSLN spec, Lean formalization, genus-1 viz + trainable PoC toolkit
+15e8be520345516bed9386743f3e49943bcdc774 2026-05-29T09:31:36+01:00 Add end-to-end composition experiment: train two tasks, tensor, test the compound
+8cca720d648fa2b1f90d1316d514d0a2e14aec84 2026-05-29T09:41:14+01:00 Dynamical-regime composition test: tensor product reshapes basins (cross-talk)
+107ed960501d7b7cf8fdd4bda99d55b2b61131cb 2026-05-29T09:54:25+01:00 Genus-2 direct sum fixes dynamical composition (separate matrix coordinates)
+be8a2c8f1153c47ed4a16c61845fe11d3af0db4c 2026-05-29T11:19:30+01:00 Add eta-quotient + gravity-coupling experiments; formalise composition monoid
+9d9f4f664a69b27d1c87378a7a749eb0356149b3 2026-05-29T11:36:57+01:00 Formally verify composition monoid + gravity lemma against mathlib v4.30.0-rc2
+5505c84527b0f80831205d8ff769cd9afb027e09 2026-05-29T12:25:38+01:00 Add CM-point alphabet + discrete-task demo ("What is your name?" -> "ADA")
+2e905c9611b544eeaf77d686c81d9e29b07ac5a3 2026-05-29T13:25:53+01:00 Learned 4-class classifier with CM-symbol code (95% held-out)
+c94730f9871961e1ea0e3204d2dfd11df5fdd962 2026-05-29T14:42:36+01:00 Tensor-composed 4-class classifier: train apart, multiply DNAs, 95% first compose
+ae50bbcd7d60703bb38e48eb8ae6b764de99f7a3 2026-05-29T15:11:06+01:00 Add dynamical time-series view + measured scaling benchmark
+31acaaac1472e6299da87e8ec89f3d40356aaaf8 2026-05-29T15:34:26+01:00 Stack two skills (function composition): "missing letter by number", 6/6
+c05c845a69eb686790cb051ae159f4596cb07e40 2026-05-29T15:50:48+01:00 Grokking test: HSLN circular rep shortcuts grokking on (a+b) mod 11
+55ca6d3df11c3f5d001a7159f20cffbd335b93dd 2026-05-29T15:53:25+01:00 Primes by composition: sieve as a product of roots-of-unity fields (25/25)
+ddc87df87d96a09545215084bdc6101d1a6cb773 2026-05-29T16:13:35+01:00 Formalize where RH's 1/2 comes from: the functional-equation symmetry (machine-checked)
+48a0c0286f5cc333d766b46037a9f227b72be3e6 2026-05-29T16:27:04+01:00 Build zeta series from composed per-prime Euler factors (the golden key)
+0b5fb7415c2b33246ef14567ab75b35428af9936 2026-05-29T16:42:03+01:00 Factorise by composing per-prime roots-of-unity detectors (inverse of Euler product)
+f765c91d37e1c2b0d600598df12cf705f8f16ba7 2026-05-29T17:00:27+01:00 Three RH-adjacent explorations: spectral (Hilbert-Polya), explicit formula, lpf landscape
+9c7667e177890ca2482b199ddc8822383fc17e68 2026-05-31T11:49:13+01:00 Spin(16) spectral construction: Hilbert-Pólya & spectral-zeta operators are equivalent to RH
+aa72ffe0f3fb1f1b6b8788c1c4f9f99c6ad272d2 2026-05-31T13:27:22+01:00 Weil/Li positivity + the machine-checked Millennium frontier map
+f4f45cba27e4a8f1698c33d44c7ab4b983b85ec6 2026-05-31T13:28:00+01:00 atlas: Weil/Li positivity frontier + Millennium map
+120dc14e2588f408a37c7369f8be44ff9e2b2911 2026-05-31T13:52:54+01:00 Divisor L-function as an Euler product: σ₃ = ζ·pow3 ↔ ζ(s)ζ(s-3) ↔ E₄/Θ(E8)
+9d3b7ea046b78859f46142da4c04c21c0e8376e4 2026-05-31T14:15:16+01:00 The HSLN finite-support space realises the quantum-state axioms (sorry-free)
+a718a0fa2049690fadc880bb9d439f6ce165bbcb 2026-05-31T14:22:44+01:00 P vs NP wired honestly: the composition/verification asymmetry ⇒ separation
+a5580dd9aa79e7c70f06664f7de7d465c5b4e24f 2026-05-31T14:43:20+01:00 SpectralArithmetic: the first-class object — RH, quantum states, arithmetic are one structure
+cbe96396490e6b1f46326f168803336809ff099f 2026-05-31T15:10:33+01:00 Bosons, fermions, and classical observables on the SpectralArithmetic space
+b8dc4cbd5ab313fe45aa145b9fe12e2455094396 2026-05-31T15:19:35+01:00 Shor's algorithm in spectral/period terms: the period→factor reduction, proven
+b68c374c43047a8eb3202fa46428b6237344c864 2026-05-31T15:57:19+01:00 Torsion of a twisted E8×E8 pair as a measurable observable (physics = labelled conjecture)
+f14aaa2a390fab5ce116786cf1804fa2d5684732 2026-05-31T19:03:46+01:00 Linter: silence unused-hypothesis warnings in SpectralShor (kernel-level unchanged)
+67acec7a6c5f666cfd13c9a7b6008c068dab03a7 2026-05-31T23:19:46+01:00 WIP

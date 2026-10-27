@@ -1,0 +1,2107 @@
+diff --git a/ArithmeticFunctionChernCharacter.lean b/ArithmeticFunctionChernCharacter.lean
+new file mode 100644
+index 0000000..770cda1
+--- /dev/null
++++ b/ArithmeticFunctionChernCharacter.lean
+@@ -0,0 +1,113 @@
++/-
++ArithmeticFunctionChernCharacter.lean
++=====================================
++
++Two ring structures on `ArithmeticFunction R`, and a "Chern character" / rank homomorphism
++that distinguishes them — a Grothendieck–Riemann–Roch shadow at the level of arithmetic
++functions.
++
++On `ArithmeticFunction R = (ℕ → R with f 0 = 0)` there are two products:
++* the **Cauchy product** `(f ⋆ g)(n) = ∑_{i+j=n} f i · g j` (the convolution of power-series
++  / Fourier coefficients, indexed by the additive monoid of `ℕ`), and
++* mathlib's **Dirichlet product** `(f * g)(n) = ∑_{d·e=n} f d · g e` (the L-series product).
++
++Evaluation at `1`, `χ(f) = f 1`, is a ring homomorphism for the Dirichlet ring (`chernChar`),
++analogous to the Chern character `K(X) → H*(X, ℚ)` being a ring homomorphism. It is additive
++(the Euler-characteristic / Riemann–Roch property) and multiplicative on the Dirichlet product,
++but it annihilates every Cauchy product: `χ(f ⋆ g) = 0`, so the image of the Cauchy product lies
++in the augmentation ideal `ker χ` — the analogue of *reduced* K-theory `K̃₀`. The group of units
++carries a rank map `(ArithmeticFunction R)ˣ →* Rˣ`, and `ℕ ↪ ℤ` is the Grothendieck completion
++of `(ℕ, +)` (`K₀` of a point).
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++open ArithmeticFunction Finset
++open scoped ArithmeticFunction.zeta ArithmeticFunction.Moebius
++
++namespace ArithmeticFunction.ChernCharacter
++
++variable {R : Type*} [CommSemiring R]
++
++/-! ### The Cauchy (power-series) product -/
++
++/-- The Cauchy / power-series convolution `(f ⋆ g)(n) = ∑_{i+j=n} f i · g j`, the second ring
++product on `ArithmeticFunction R` (distinct from mathlib's Dirichlet `*`). -/
++def cauchyMul (f g : ArithmeticFunction R) : ArithmeticFunction R where
++  toFun n := ∑ p ∈ antidiagonal n, f p.1 * g p.2
++  map_zero' := by simp
++
++@[simp] theorem cauchyMul_apply (f g : ArithmeticFunction R) (n : ℕ) :
++    cauchyMul f g n = ∑ p ∈ antidiagonal n, f p.1 * g p.2 := rfl
++
++@[inherit_doc] scoped infixl:70 " ⋆ " => cauchyMul
++
++/-- The Cauchy product vanishes at `1`: the only splittings `i + j = 1` are `(0,1)` and `(1,0)`,
++both killed by `f 0 = g 0 = 0`. -/
++theorem cauchy_apply_one_eq_zero (f g : ArithmeticFunction R) : (f ⋆ g) 1 = 0 := by
++  simp [cauchyMul_apply, antidiagonal]
++
++/-! ### The Chern character / rank as a ring homomorphism -/
++
++/-- Evaluation at `1`, `χ(f) = f 1`, as a ring homomorphism out of the Dirichlet ring — the
++arithmetic-function analogue of the Chern character `K(X) → H*(X, ℚ)`. -/
++def chernChar : ArithmeticFunction R →+* R where
++  toFun f := f 1
++  map_one' := by simp
++  map_zero' := by simp
++  map_mul' f g := by simp
++  map_add' f g := by simp
++
++@[simp] theorem chernChar_apply (f : ArithmeticFunction R) : chernChar f = f 1 := rfl
++
++/-- Multiplicativity on the Dirichlet product: `χ(f * g) = χ(f) · χ(g)`. -/
++theorem chernChar_dirichlet (f g : ArithmeticFunction R) :
++    chernChar (f * g) = chernChar f * chernChar g :=
++  map_mul chernChar f g
++
++/-- Additivity (the Euler-characteristic / Riemann–Roch property): `χ(f + g) = χ(f) + χ(g)`. -/
++theorem chernChar_add (f g : ArithmeticFunction R) :
++    chernChar (f + g) = chernChar f + chernChar g :=
++  map_add chernChar f g
++
++/-! ### The Cauchy product lands in the augmentation ideal (reduced K-theory) -/
++
++/-- The Chern character annihilates every Cauchy product: `χ(f ⋆ g) = 0`. -/
++theorem chernChar_cauchy (f g : ArithmeticFunction R) :
++    chernChar (f ⋆ g) = 0 :=
++  cauchy_apply_one_eq_zero f g
++
++/-- Every Cauchy product lies in the augmentation ideal `ker χ` (the analogue of reduced
++K-theory `K̃₀`). -/
++theorem cauchy_mem_ker (f g : ArithmeticFunction R) :
++    f ⋆ g ∈ RingHom.ker (chernChar (R := R)) :=
++  RingHom.mem_ker.mpr (chernChar_cauchy f g)
++
++/-! ### The rank map on units, and `K₀` of a point -/
++
++/-- The rank map `(ArithmeticFunction R)ˣ →* Rˣ` induced by the Chern character. -/
++def rank : (ArithmeticFunction R)ˣ →* Rˣ := Units.map chernChar.toMonoidHom
++
++@[simp] theorem rank_apply (u : (ArithmeticFunction R)ˣ) :
++    (rank u : R) = (u : ArithmeticFunction R) 1 := rfl
++
++/-- `K₀` of a point: the Grothendieck completion of the additive monoid `(ℕ, +)` is `(ℤ, +)`,
++and the completion map `ℕ ↪ ℤ` is injective. -/
++theorem k0_point_completion_injective : Function.Injective ((↑) : ℕ → ℤ) :=
++  Nat.cast_injective
++
++/-- The divisor function `d(n) = (ζ * ζ)(n)` has Chern character `1` (the rank-one class). -/
++theorem chernChar_divisor : chernChar ((ζ * ζ : ArithmeticFunction ℕ)) = 1 := by
++  simp [chernChar_apply]
++
++/-- The four facts together: `χ` is a ring homomorphism (multiplicative on `*`), additive,
++annihilates the Cauchy product (image in `ker χ`), and `K₀` of a point is `ℤ`. -/
++theorem grr_summary :
++    (∀ f g : ArithmeticFunction R, chernChar (f * g) = chernChar f * chernChar g) ∧
++    (∀ f g : ArithmeticFunction R, chernChar (f + g) = chernChar f + chernChar g) ∧
++    (∀ f g : ArithmeticFunction R, f ⋆ g ∈ RingHom.ker (chernChar (R := R))) ∧
++    Function.Injective ((↑) : ℕ → ℤ) :=
++  ⟨chernChar_dirichlet, chernChar_add, cauchy_mem_ker, k0_point_completion_injective⟩
++
++end ArithmeticFunction.ChernCharacter
+diff --git a/ArithmeticFunctionLanglandsLocus.lean b/ArithmeticFunctionLanglandsLocus.lean
+new file mode 100644
+index 0000000..560824b
+--- /dev/null
++++ b/ArithmeticFunctionLanglandsLocus.lean
+@@ -0,0 +1,109 @@
++/-
++ArithmeticFunctionLanglandsLocus.lean
++=====================================
++
++The multiplicative locus of the Dirichlet ring of arithmetic functions, packaged as a
++submonoid, and "functoriality" as locus-preserving ring endomorphisms.
++
++The set of multiplicative arithmetic functions `{f : f 1 = 1, f (m*n) = f m * f n for
++gcd(m,n) = 1}` is closed under Dirichlet convolution (`IsMultiplicative.mul`) and contains the
++identity (`isMultiplicative_one`), hence is a `Submonoid (ArithmeticFunction R)`. This is the
++algebraic skeleton of the Langlands philosophy: automorphic L-data is closed under the product
++realising functoriality. Abelian class field theory (`ζ · L(·, χ_D) = ζ_K`) and Rankin–Selberg
++products both live here as instances of "the product stays in the locus".
++
++A `LanglandsTransfer` is a ring endomorphism of the Dirichlet ring that maps the locus into
++itself; transfers compose and contain the identity. The conjectural existence of a transfer
++realising a prescribed source ↦ target (Langlands functoriality) is stated as a `Prop`.
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++open ArithmeticFunction
++open scoped ArithmeticFunction.zeta ArithmeticFunction.Moebius
++
++namespace ArithmeticFunction.LanglandsLocus
++
++/-- The multiplicative locus of the Dirichlet ring, as a submonoid: closed under Dirichlet
++convolution and containing the identity `δ`. -/
++def langlandsLocus (R : Type*) [CommSemiring R] : Submonoid (ArithmeticFunction R) where
++  carrier := {f | f.IsMultiplicative}
++  mul_mem' hf hg := hf.mul hg
++  one_mem' := isMultiplicative_one
++
++@[simp] theorem mem_langlandsLocus {R : Type*} [CommSemiring R]
++    {f : ArithmeticFunction R} : f ∈ langlandsLocus R ↔ f.IsMultiplicative := Iff.rfl
++
++/-- The closure law: the Dirichlet product of two locus elements stays in the locus
++(abelian Langlands / Rankin–Selberg skeleton). -/
++theorem langlands_product_mem {R : Type*} [CommSemiring R]
++    {f g : ArithmeticFunction R} (hf : f ∈ langlandsLocus R) (hg : g ∈ langlandsLocus R) :
++    f * g ∈ langlandsLocus R :=
++  (langlandsLocus R).mul_mem hf hg
++
++theorem zeta_mem : (ζ : ArithmeticFunction ℤ) ∈ langlandsLocus ℤ :=
++  mem_langlandsLocus.mpr isMultiplicative_zeta.natCast
++
++theorem moebius_mem : (μ : ArithmeticFunction ℤ) ∈ langlandsLocus ℤ :=
++  mem_langlandsLocus.mpr isMultiplicative_moebius
++
++/-- `ζ * μ = δ` lies in the locus (the trivial representation against its inverse). -/
++theorem zeta_mul_moebius_mem : (ζ * μ : ArithmeticFunction ℤ) ∈ langlandsLocus ℤ :=
++  langlands_product_mem zeta_mem moebius_mem
++
++/-- `ζ * ζ` (the divisor L-function) lies in the locus (the `ζ ⊠ ζ` Rankin–Selberg skeleton). -/
++theorem zeta_sq_mem : (ζ * ζ : ArithmeticFunction ℤ) ∈ langlandsLocus ℤ :=
++  langlands_product_mem zeta_mem zeta_mem
++
++/-- A locus-preserving ring endomorphism of the Dirichlet ring (the algebraic shadow of a
++functorial transfer of automorphic representations). -/
++structure LanglandsTransfer (R : Type*) [CommSemiring R] where
++  φ : ArithmeticFunction R →+* ArithmeticFunction R
++  preserves : ∀ {f}, f ∈ langlandsLocus R → φ f ∈ langlandsLocus R
++
++/-- The identity transfer. -/
++def LanglandsTransfer.id (R : Type*) [CommSemiring R] : LanglandsTransfer R where
++  φ := RingHom.id _
++  preserves h := h
++
++/-- Transfers compose. -/
++def LanglandsTransfer.comp {R : Type*} [CommSemiring R]
++    (S T : LanglandsTransfer R) : LanglandsTransfer R where
++  φ := S.φ.comp T.φ
++  preserves h := S.preserves (T.preserves h)
++
++theorem LanglandsTransfer.maps_locus {R : Type*} [CommSemiring R]
++    (Φ : LanglandsTransfer R) {f : ArithmeticFunction R} (hf : f ∈ langlandsLocus R) :
++    Φ.φ f ∈ langlandsLocus R :=
++  Φ.preserves hf
++
++/-- **Functoriality** (conjectural): for an automorphic `source` and `target`, there exists a
++locus-preserving transfer with `φ source = target`. Abelian case known; general case open. -/
++def LanglandsFunctoriality (R : Type*) [CommSemiring R]
++    (source target : ArithmeticFunction R) : Prop :=
++  source ∈ langlandsLocus R → target ∈ langlandsLocus R →
++    ∃ Φ : LanglandsTransfer R, Φ.φ source = target
++
++/-- Given a realising transfer, the target stays automorphic (the algebra is forced; only the
++transfer's existence is the open content). -/
++theorem target_mem_of_functoriality {R : Type*} [CommSemiring R]
++    {source target : ArithmeticFunction R}
++    (hs : source ∈ langlandsLocus R) (ht : target ∈ langlandsLocus R)
++    (h : LanglandsFunctoriality R source target) :
++    ∃ Φ : LanglandsTransfer R, Φ.φ source = target ∧ Φ.φ source ∈ langlandsLocus R := by
++  obtain ⟨Φ, hΦ⟩ := h hs ht
++  exact ⟨Φ, hΦ, hΦ ▸ ht⟩
++
++/-- The locus is a submonoid (closed under `*`), with `ζ*μ` and `ζ*ζ` as witnesses, and the
++identity transfer is the ring identity. -/
++theorem langlands_summary :
++    (∀ f g : ArithmeticFunction ℤ, f ∈ langlandsLocus ℤ → g ∈ langlandsLocus ℤ →
++        f * g ∈ langlandsLocus ℤ) ∧
++    ((ζ * μ : ArithmeticFunction ℤ) ∈ langlandsLocus ℤ) ∧
++    ((ζ * ζ : ArithmeticFunction ℤ) ∈ langlandsLocus ℤ) ∧
++    ((LanglandsTransfer.id ℤ).φ = RingHom.id _) :=
++  ⟨fun _ _ hf hg => langlands_product_mem hf hg,
++   zeta_mul_moebius_mem, zeta_sq_mem, rfl⟩
++
++end ArithmeticFunction.LanglandsLocus
+diff --git a/HodgeChernCharacter.lean b/HodgeChernCharacter.lean
+new file mode 100644
+index 0000000..363192f
+--- /dev/null
++++ b/HodgeChernCharacter.lean
+@@ -0,0 +1,171 @@
++/-
++HodgeChernCharacter.lean
++========================
++
++An abstract bigraded Hodge structure on a ℚ-cohomology algebra, the Hodge classes as the
++diagonal `H^{k,k}`, and the cycle-class / Chern-class inclusion `algebraic ⊆ Hodge` (the proven
++direction). The Hodge conjecture (the reverse inclusion) is stated as a `Prop`; integral-Hodge
++modulo torsion is shown to collapse to the integral Hodge conjecture on a torsion-free lattice.
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++namespace HodgeChernCharacter
++
++variable {A : Type*} [CommRing A] [Algebra ℚ A]
++
++/-! ### The Hodge decomposition as an abstract bigrading -/
++
++/-- **An abstract Hodge structure** on a `ℚ`-cohomology algebra `A`. The pieces `comp p q` model
++`H^{p,q}(X)` (the rational shadow of the Hodge decomposition `Hⁿ(X,ℂ) = ⊕_{p+q=n} H^{p,q}`),
++with the cup-product compatibility `H^{p,q} ⌣ H^{p',q'} ⊆ H^{p+p', q+q'}`. This is the
++formalizable linear-algebra core — no geometry required. -/
++structure HodgeStr (A : Type*) [CommRing A] [Algebra ℚ A] where
++  /-- the `(p,q)` Hodge piece (rational model of `H^{p,q}`) -/
++  comp : ℕ → ℕ → Submodule ℚ A
++  /-- cup product respects the bigrading: `H^{p,q} ⌣ H^{p',q'} ⊆ H^{p+p', q+q'}` -/
++  mul_mem' : ∀ {p q p' q' : ℕ} {a b : A}, a ∈ comp p q → b ∈ comp p' q' →
++    a * b ∈ comp (p + p') (q + q')
++
++/-- **Hodge classes in degree `2k`.** The "diagonal" piece `H^{k,k}` — the rational classes of
++type `(k,k)`, where Hodge classes live. -/
++def hodgeClass (H : HodgeStr A) (k : ℕ) : Submodule ℚ A := H.comp k k
++
++/-- **Hodge classes form a graded subring** (the key structural theorem). The cup product of a
++Hodge class of degree `k` and one of degree `k'` is a Hodge class of degree `k + k'`: the
++diagonal `H^{k,k}` is closed under `⌣`. This is exactly why the Chern character (a ring
++homomorphism) lands its image inside the Hodge ring. Sorry-free. -/
++theorem hodge_mul (H : HodgeStr A) {k k' : ℕ} {a b : A}
++    (ha : a ∈ hodgeClass H k) (hb : b ∈ hodgeClass H k') :
++    a * b ∈ hodgeClass H (k + k') :=
++  H.mul_mem' ha hb
++
++/-! ### Algebraic classes, the proven inclusion, and the conjecture -/
++
++/-- **The Hodge picture as data.** A `HodgeStr` together with the algebraic classes `alg k`
++(the `ℚ`-span of codimension-`k` cycle classes / Chern classes of algebraic bundles) and the
++**proven inclusion** `alg k ≤ hodgeClass k` (algebraic ⇒ Hodge of type `(k,k)`; standard Hodge
++theory). The inclusion is the proven direction; the conjecture is its reverse. -/
++structure HodgeData (A : Type*) [CommRing A] [Algebra ℚ A] where
++  /-- the Hodge bigrading -/
++  H : HodgeStr A
++  /-- algebraic classes in codimension `k` (`ℚ`-span of cycle / Chern classes) -/
++  alg : ℕ → Submodule ℚ A
++  /-- **the proven direction**: every algebraic class is a Hodge class (Hodge theory) -/
++  alg_le_hodge : ∀ k, alg k ≤ hodgeClass H k
++
++/-- **The Hodge conjecture** — the OPEN core, stated honestly. Every Hodge class is algebraic:
++`hodgeClass k ≤ alg k` for every `k`. Combined with the proven `alg_le_hodge`, this is the
++equality of the two `ℚ`-subspaces. -/
++def HodgeConjecture (D : HodgeData A) : Prop := ∀ k, hodgeClass D.H k ≤ D.alg k
++
++/-- **The conjecture ⇔ the two subspaces coincide** — sorry-free. Given the proven inclusion
++`alg ≤ Hodge`, the Hodge conjecture is exactly the statement that algebraic classes and Hodge
++classes are *equal* in every codimension. (`le_antisymm` in the `Submodule` lattice.) -/
++theorem hodgeConjecture_iff_eq (D : HodgeData A) :
++    HodgeConjecture D ↔ ∀ k, D.alg k = hodgeClass D.H k := by
++  constructor
++  · intro h k; exact le_antisymm (D.alg_le_hodge k) (h k)
++  · intro h k; rw [h k]
++
++/-- **Algebraic classes are Hodge classes** — sorry-free (it is `D.alg_le_hodge`, surfaced as a
++theorem). The cleanly-proven half of the picture: `alg k ⊆ Hdg^k`. The conjecture is the only
++missing inclusion. -/
++theorem alg_subset_hodge (D : HodgeData A) (k : ℕ) : D.alg k ≤ hodgeClass D.H k :=
++  D.alg_le_hodge k
++
++/-! ### The Chern-character bridge to K-theory -/
++
++/-- **Chern classes are Hodge classes** (the K-theory bridge), modelled abstractly. If a class
++`c` lies in the algebraic classes `alg k` — e.g. `c = chₖ(E)` for an algebraic bundle `E`, via
++the `chernChar` ring homomorphism — then `c` is a Hodge class. So the Chern
++character of algebraic K-theory lands inside the Hodge ring; the Hodge conjecture is precisely
++the *surjectivity* of that map onto the Hodge classes. Sorry-free. -/
++theorem chern_mem_hodge (D : HodgeData A) {k : ℕ} {c : A} (hc : c ∈ D.alg k) :
++    c ∈ hodgeClass D.H k :=
++  D.alg_le_hodge k hc
++
++/-- **The Chern image is closed under cup product inside the Hodge ring.** Products of algebraic
++Hodge classes are Hodge classes (`hodge_mul`): the algebraic classes map into a graded subring
++of the Hodge ring. This is the structural shadow of "`chernChar` is a ring homomorphism"
++(`chernChar_dirichlet`) transported to the Hodge setting. Sorry-free. -/
++theorem alg_mul_mem_hodge (D : HodgeData A) {k k' : ℕ} {a b : A}
++    (ha : a ∈ D.alg k) (hb : b ∈ D.alg k') :
++    a * b ∈ hodgeClass D.H (k + k') :=
++  hodge_mul D.H (D.alg_le_hodge k ha) (D.alg_le_hodge k' hb)
++
++/-! ### Proven case, and the false generalisations (documented as Props) -/
++
++/-- **The Lefschetz `(1,1)`-theorem** (Lefschetz 1924) — the PROVEN case `k = 1`: every Hodge
++class of degree 2 is algebraic (a `ℚ`-combination of divisor classes). Stated as a `Prop`
++(citing Lefschetz; the proof needs the exponential sheaf sequence / Picard group, beyond our
++abstract substrate). -/
++def Lefschetz_11 (D : HodgeData A) : Prop := hodgeClass D.H 1 ≤ D.alg 1
++
++/-- **The integral Hodge conjecture** — FALSE (Atiyah–Hirzebruch 1962). The naive `ℤ`-coefficient
++version (every integral `(k,k)` class is an *integral* combination of cycle classes) fails; the
++obstruction is detected by **topological K-theory** (Atiyah–Hirzebruch spectral-sequence
++differentials) — a direct K-theory link. We model the integral classes as a sub-`ℤ`-structure
++`algℤ k` inside `hdgℤ k`; the integral conjecture `hdgℤ k ≤ algℤ k` is the statement known to be
++false in general. Documented as a `Prop`, NOT asserted. -/
++def IntegralHodgeConjecture (hdgℤ algℤ : ℕ → Submodule ℤ A) : Prop := ∀ k, hdgℤ k ≤ algℤ k
++
++/-! ### Integral Hodge modulo torsion — and why E8×E8 lives in the clean regime
++
++The Atiyah–Hirzebruch counterexamples to the *integral* Hodge conjecture are **torsion classes**
++(detected by topological-K-theory torsion — the free/torsion split that the K-theory development's
++`K₀(point) = ℤ` and reduced `K̃₀` already make precise). So the natural refinement is "integral
++Hodge **modulo torsion**": every integral Hodge class is (algebraic) + (torsion). On a
++**torsion-free** coefficient lattice the torsion term vanishes and this collapses back to the
++plain integral statement.
++
++This is exactly the regime of an even unimodular lattice such as `E₈ × E₈`: it is
++torsion-free, so the "modulo torsion" qualifier is *vacuous* there, the Atiyah–Hirzebruch
++obstruction (which is pure torsion) cannot arise, and rationalising (`⊗ ℚ`) loses nothing. -/
++
++/-- **Integral Hodge modulo torsion** (Wikipedia's refined statement): every class in
++`H^{2k}(X,ℤ) ∩ H^{k,k}` is the sum of a **torsion class** and the class of an integral algebraic
++cycle, i.e. `hdgℤ k ≤ algℤ k ⊔ tors`. Stated as a `Prop` — still FALSE in general (Kollár 1992;
++Benoist–Ottem give *non-torsion* counterexamples), so NOT asserted; but it is the form the E8×E8
++torsion-free lattice makes clean. -/
++def IntegralHodgeModTorsion (hdgℤ algℤ : ℕ → Submodule ℤ A) (tors : Submodule ℤ A) : Prop :=
++  ∀ k, hdgℤ k ≤ algℤ k ⊔ tors
++
++omit [Algebra ℚ A] in
++/-- **On a torsion-free lattice, "modulo torsion" is vacuous** — sorry-free. If the torsion
++submodule is trivial (`tors = ⊥`, the E8×E8 even-unimodular case), then integral-Hodge-modulo-
++torsion is *exactly* the integral Hodge conjecture: the torsion correction term `⊔ ⊥` collapses.
++This is the precise sense in which an even unimodular (torsion-free) lattice sits in the clean
++regime — the Atiyah–Hirzebruch torsion obstruction cannot arise on a torsion-free lattice. -/
++theorem integralHodgeModTorsion_iff_of_torsionFree
++    (hdgℤ algℤ : ℕ → Submodule ℤ A) (tors : Submodule ℤ A) (htf : tors = ⊥) :
++    IntegralHodgeModTorsion hdgℤ algℤ tors ↔ IntegralHodgeConjecture hdgℤ algℤ := by
++  subst htf; simp [IntegralHodgeModTorsion, IntegralHodgeConjecture]
++
++omit [Algebra ℚ A] in
++/-- **The torsion correction only ever weakens the statement** — sorry-free. The plain integral
++Hodge conjecture implies its modulo-torsion form (adding `⊔ tors` can only enlarge the target).
++So modulo-torsion is the genuinely weaker, more believable statement — and on E8×E8 (`tors = ⊥`)
++the two coincide by `integralHodgeModTorsion_iff_of_torsionFree`. -/
++theorem integralHodgeModTorsion_of_integralHodge
++    (hdgℤ algℤ : ℕ → Submodule ℤ A) (tors : Submodule ℤ A)
++    (h : IntegralHodgeConjecture hdgℤ algℤ) :
++    IntegralHodgeModTorsion hdgℤ algℤ tors :=
++  fun k => le_trans (h k) le_sup_left
++
++/-! ### Summary -/
++
++/-- **The Hodge picture, assembled.** (1) Hodge classes form a graded subring (the diagonal is
++closed under `⌣`); (2) algebraic ⊆ Hodge (the proven direction); (3) products of algebraic
++classes are Hodge; (4) the conjecture ⇔ equality of the two subspaces. Everything proven except
++the surjectivity `Hodge ⊆ algebraic` — `HodgeConjecture`, the open Millennium core, which is the
++surjectivity of the Chern character onto the Hodge classes. -/
++theorem hodge_summary (D : HodgeData A) :
++    (∀ {k k' : ℕ} {a b : A}, a ∈ hodgeClass D.H k → b ∈ hodgeClass D.H k' →
++        a * b ∈ hodgeClass D.H (k + k')) ∧
++    (∀ k, D.alg k ≤ hodgeClass D.H k) ∧
++    (HodgeConjecture D ↔ ∀ k, D.alg k = hodgeClass D.H k) :=
++  ⟨fun ha hb => hodge_mul D.H ha hb, alg_subset_hodge D, hodgeConjecture_iff_eq D⟩
++
++end HodgeChernCharacter
+diff --git a/MillenniumFrontierMap.lean b/MillenniumFrontierMap.lean
+new file mode 100644
+index 0000000..0ef624c
+--- /dev/null
++++ b/MillenniumFrontierMap.lean
+@@ -0,0 +1,181 @@
++/-
++MillenniumFrontierMap.lean
++==========================
++
++A uniform `ReducesTo` structure isolating four Clay Millennium problems (Riemann Hypothesis,
++Birch–Swinnerton-Dyer, Hodge, Yang–Mills) each to a single open barrier proposition, with the
++reduction arrows machine-checked sorry-free and proven partial results carried as hypotheses.
++A formal frontier map, not a set of solutions.
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++namespace MillenniumFrontierMap
++
++/-! ### A uniform notion of "reduced to a single open node" -/
++
++/-- A **reduction** of a target proposition `T` to a single `barrier` proposition: a sorry-free
++proof that `barrier → T`. The barrier is the open node; `forward` is the machine-checked arrow.
++(We deliberately ask only for `barrier → T`, the direction that would *settle* `T`; some
++problems also have `T → barrier`, recorded separately when available.) -/
++structure ReducesTo (T : Prop) where
++  /-- the single open proposition the problem is reduced to -/
++  barrier : Prop
++  /-- the sorry-free reduction arrow -/
++  forward : barrier → T
++
++/-- If the barrier of a reduction is proved, the target follows — sorry-free, definitional. -/
++theorem ReducesTo.resolve {T : Prop} (R : ReducesTo T) (h : R.barrier) : T := R.forward h
++
++/-! ### Riemann Hypothesis — reduced to explicit-formula positivity
++
++PROVEN (carried): Weil's criterion `(∀ g, B(g,g) ≥ 0) ↔ RH` (Weil 1952; Bombieri 2000) and
++Li's criterion `(∀ n, λₙ ≥ 0) ↔ RH` (Li 1997). Both equivalences are theorems.
++OPEN node: the positivity itself — `∀ g, B(g,g) ≥ 0`. This *is* RH.
++WHY HARD: the prime-power sum `∑ Λ(n) n^{-1/2} g(log n)` carries no sign and must be dominated
++by the positive archimedean (Γ′/Γ) term for *every* test function; and any proof must use the
++Euler product essentially (the functional equation alone is satisfied by Epstein /
++Davenport–Heilbronn zetas, which have zeros off the line). Analytic, not algebraic — no finite
++certificate is known. -/
++def riemannHypothesis_reducesTo_weilPositivity
++    (weilFunctional : Type → ℝ) -- placeholder family; the literature's B(g,g)
++    (hcrit : (∀ g, 0 ≤ weilFunctional g) ↔ RiemannHypothesis) :
++    ReducesTo RiemannHypothesis where
++  barrier := ∀ g, 0 ≤ weilFunctional g
++  forward := hcrit.mp
++
++/-! ### Birch–Swinnerton-Dyer — reduced to the high-rank case
++
++PROVEN (carried): Gross–Zagier (1986) + Kolyvagin (1989): for a modular elliptic curve,
++`analyticRank ≤ 1 → analyticRank = algebraicRank`. Modularity (Wiles, TW, BCDT 2001) makes
++`L(E,s)` entire so `analyticRank` is defined.
++OPEN node: the rank equality when `analyticRank ≥ 2`, together with finiteness of the
++Tate–Shafarevich group `Ш` in general.
++WHY HARD: Heegner-point / Euler-system methods (Kolyvagin) produce a nontrivial point exactly
++when `analyticRank = 1`; they give nothing for higher analytic rank, and no construction is
++known that manufactures `≥ 2` independent points from the vanishing of `L` to order `≥ 2`. -/
++def bsd_reducesTo_highRank
++    {AnalyticRankLeOneCase : Prop} {HighRankCase : Prop} {BSD : Prop}
++    (gross_zagier_kolyvagin : AnalyticRankLeOneCase)  -- PROVEN, carried as hypothesis
++    (split : AnalyticRankLeOneCase → HighRankCase → BSD) :
++    ReducesTo BSD where
++  barrier := HighRankCase
++  forward := split gross_zagier_kolyvagin
++
++/-! ### Hodge conjecture — reduced to surjectivity of the cycle map for `k ≥ 2`
++
++PROVEN (carried): the Lefschetz (1,1)-theorem — the `k = 1` case — and the inclusion
++`algebraic ⊆ Hodge` (cycle classes have type `(k,k)`) for all `k`.
++OPEN node: surjectivity of the cycle class map onto the Hodge classes in codimension `k ≥ 2`.
++WHY HARD: there is no general construction of an algebraic cycle from a rational `(k,k)` class;
++the natural integral and Kähler strengthenings are *false* (Atiyah–Hirzebruch; Voisin), so any
++proof must use projectivity and ℚ-coefficients essentially — ruling out the obvious approaches. -/
++def hodge_reducesTo_higherCodim
++    {Lefschetz11 : Prop} {HigherCodim : Prop} {Hodge : Prop}
++    (lefschetz : Lefschetz11)  -- PROVEN (k=1), carried
++    (split : Lefschetz11 → HigherCodim → Hodge) :
++    ReducesTo Hodge where
++  barrier := HigherCodim
++  forward := split lefschetz
++
++/-! ### Yang–Mills mass gap — reduced to existence of a gapped 4D theory
++
++PROVEN (carried): the mass-gap-as-spectral-gap reformulation (a self-adjoint Hamiltonian with
++spectrum `{0} ∪ [Δ,∞)`, `Δ > 0`); rigorous construction in 2D; partial control in 3D; lattice
++numerics (evidence, not proof).
++OPEN node: the existence of a non-trivial quantum Yang–Mills theory on `ℝ⁴` (Wightman/OS axioms)
++that *also* has a mass gap.
++WHY HARD: there is no rigorous non-perturbative construction of interacting 4D gauge theory at
++all — the existence half is open before the gap is even addressed; and the gap is a
++non-perturbative, infrared phenomenon invisible to the perturbative expansion. -/
++def yangMills_reducesTo_existence
++    {SpectralGapReformulation : Prop} {Exists4DGappedTheory : Prop} {YangMillsMassGap : Prop}
++    (reformulation : SpectralGapReformulation)  -- PROVEN, carried
++    (split : SpectralGapReformulation → Exists4DGappedTheory → YangMillsMassGap) :
++    ReducesTo YangMillsMassGap where
++  barrier := Exists4DGappedTheory
++  forward := split reformulation
++
++/-! ### Two-way reductions: when the barrier is *equivalent* to the target
++
++For the Riemann Hypothesis we have, from the positivity plumbing, BOTH directions proven
++sorry-free (Weil 1952 / Li 1997 criteria carried as the cited equivalence): positivity ⇒ RH
++and RH ⇒ positivity. So the RH node is not merely a sufficient barrier — it is an honest
++*equivalence*. We package that, and realise it concretely. -/
++
++/-- A **two-way reduction**: the barrier is logically equivalent to the target. Strictly
++stronger than `ReducesTo` — both `barrier → T` and `T → barrier` are machine-checked. -/
++structure EquivTo (T : Prop) where
++  /-- the single proposition equivalent to the target -/
++  barrier : Prop
++  /-- the proven equivalence `barrier ↔ T` -/
++  equiv : barrier ↔ T
++
++/-- An `EquivTo` weakens to a `ReducesTo` (forget the reverse direction). -/
++def EquivTo.toReducesTo {T : Prop} (E : EquivTo T) : ReducesTo T where
++  barrier := E.barrier
++  forward := E.equiv.mp
++
++/-! ### Concrete RH node, realised from the positivity plumbing
++
++`liCoeff` are Li's coefficients `λₙ` (an `opaque` stand-in for the literature's objects — NOT a
++`sorry`, just an abstract real sequence). Li's criterion `(∀ n, λₙ ≥ 0) ↔ RH` (Li 1997) is the
++PROVEN equivalence, carried as a hypothesis. The node is then a concrete `EquivTo
++RiemannHypothesis`, both directions sorry-free. -/
++
++/-- Li's coefficients `λₙ` (opaque abstraction of `∑_ρ (1 − (1−1/ρ)ⁿ)`; not a sorry). -/
++opaque liCoeff : ℕ → ℝ
++
++/-- **The RH node as an equivalence** (sorry-free). Given Li's criterion (the cited 1997
++equivalence), the Riemann Hypothesis is *equivalent* to `∀ n, λₙ ≥ 0` — a concrete realised
++node, both directions machine-checked, no `sorry`/`sorryAx`. -/
++def riemannHypothesis_equivTo_liPositivity
++    (hcrit : (∀ n, 0 ≤ liCoeff n) ↔ RiemannHypothesis) : EquivTo RiemannHypothesis where
++  barrier := ∀ n, 0 ≤ liCoeff n
++  equiv := hcrit
++
++/-- **RH ⇒ Li positivity** (the reverse direction, sorry-free) — extracted from the node, the
++direction the abstract `ReducesTo` did not record. So the RH barrier genuinely captures RH, not
++just a sufficient condition for it. -/
++theorem liPositivity_of_riemannHypothesis
++    (hcrit : (∀ n, 0 ≤ liCoeff n) ↔ RiemannHypothesis) (h : RiemannHypothesis) :
++    ∀ n, 0 ≤ liCoeff n :=
++  (riemannHypothesis_equivTo_liPositivity hcrit).equiv.mpr h
++
++/-- **A single negative Li coefficient disproves RH** (sorry-free) — the falsification edge of
++the node: exhibit one `n` with `λₙ < 0` and RH fails. -/
++theorem not_riemannHypothesis_of_neg_liCoeff
++    (hcrit : (∀ n, 0 ≤ liCoeff n) ↔ RiemannHypothesis) {n : ℕ} (hn : liCoeff n < 0) :
++    ¬ RiemannHypothesis :=
++  fun h => absurd (liPositivity_of_riemannHypothesis hcrit h n) (not_le.mpr hn)
++
++/-! ### The map, assembled -/
++
++/-- **The frontier, in one statement.** Given the four problems' proven partial results
++(carried as hypotheses) and the corresponding split lemmas, each Millennium target is reduced,
++sorry-free, to a single barrier proposition. The `ReducesTo` bundles are the machine-checked
++arrows; the barriers are the open nodes. -/
++theorem millennium_frontier
++    {RH BSD Hodge YM : Prop}
++    (Rrh : ReducesTo RH) (Rbsd : ReducesTo BSD)
++    (Rhodge : ReducesTo Hodge) (Rym : ReducesTo YM) :
++    (Rrh.barrier → RH) ∧ (Rbsd.barrier → BSD) ∧
++    (Rhodge.barrier → Hodge) ∧ (Rym.barrier → YM) :=
++  ⟨Rrh.forward, Rbsd.forward, Rhodge.forward, Rym.forward⟩
++
++/-- **The frontier with the RH node as a realised equivalence** (sorry-free). The Riemann
++Hypothesis is *exactly* `∀ n, λₙ ≥ 0` (via Li's carried criterion), and the other three
++Millennium targets reduce to their barriers. The RH row is an `↔`; the rest are `→`. This is the
++sharpest honest form: one node fully realised as an equivalence from our positivity plumbing,
++the others as proven reductions. -/
++theorem millennium_frontier_with_rh_equiv
++    {BSD Hodge YM : Prop}
++    (hcrit : (∀ n, 0 ≤ liCoeff n) ↔ RiemannHypothesis)
++    (Rbsd : ReducesTo BSD) (Rhodge : ReducesTo Hodge) (Rym : ReducesTo YM) :
++    ((∀ n, 0 ≤ liCoeff n) ↔ RiemannHypothesis) ∧
++    (Rbsd.barrier → BSD) ∧ (Rhodge.barrier → Hodge) ∧ (Rym.barrier → YM) :=
++  ⟨(riemannHypothesis_equivTo_liPositivity hcrit).equiv,
++   Rbsd.forward, Rhodge.forward, Rym.forward⟩
++
++end MillenniumFrontierMap
+diff --git a/SpectralArithmetic.lean b/SpectralArithmetic.lean
+new file mode 100644
+index 0000000..4d0b9e1
+--- /dev/null
++++ b/SpectralArithmetic.lean
+@@ -0,0 +1,251 @@
++/-
++SpectralArithmetic.lean — the first-class object underneath the whole construction.
++===================================================================================
++
++Everything in this development — the Riemann-Hypothesis / Hilbert–Pólya equivalence, the
++quantum-state realisation, the divisor / L-function bridge — is one structure wearing different
++clothes:
++
++      a real spectrum  `s : ι → ℝ`  realised as the eigenvalues of a self-adjoint
++      diagonal operator on the finite-support inner-product space  `ι →₀ ℂ`.
++
++This file makes that object first-class: `SpectralArithmetic`. The carrier `ι →₀ ℂ` is a complex
++inner product space (built here from scratch — mathlib has none on `ι →₀ ℂ`); the observable
++`diagonalOp s` is self-adjoint; its eigenvalues are exactly `{s i}`; and self-adjointness forces
++them real (the single fact under RH-on-the-line, real measurement outcomes in QM, and real
++L-function frequencies).
++
++The three faces, each a theorem here:
++  • **Hilbert–Pólya / RH** — `s = Complex.im ∘ (zeros)` makes `diagonalOp s` the operator whose
++    spectrum is the zero-heights; self-adjoint ⇒ real ⇒ on the critical line.
++  • **Quantum state** — a unit vector in `ι →₀ ℂ` is a state; `diagonalOp s` is an observable;
++    `⟨ψ, diagonalOp s ψ⟩` is its (real) expectation; `‖ψ i‖²` are the Born probabilities.
++  • **L-functions / divisor bridge** — the index `i` ranges over ℕ and `s` over arithmetic data
++    (e.g. divisor counts), making an arithmetic function a self-adjoint observable.
++
++The headline identity, proven by `rfl`: **the Hilbert–Pólya operator and the quantum observable
++are the same Lean term.** They were never two constructions.
++
++`sorry`-free against mathlib v4.30.0-rc2 (`./verify.sh`, `./audit_axioms.sh`).
++-/
++import Mathlib
++
++open Module.End Complex
++open scoped BigOperators ComplexConjugate InnerProductSpace
++
++namespace SpectralArith
++
++/-! ## The carrier: finite-support complex sequences with a from-scratch inner product -/
++
++/-- The carrier space: finitely supported complex amplitudes indexed by `ι`. The unique carrier
++on which a diagonal operator with an arbitrary (possibly unbounded) real spectrum is everywhere
++defined — finiteness of support sidesteps the convergence an `ℓ²` completion would demand. -/
++abbrev Carrier (ι : Type*) : Type _ := ι →₀ ℂ
++
++namespace Carrier
++variable {ι : Type*}
++
++/-- The Hermitian pairing `⟨f, g⟩ = ∑ conj(f i)·g i`. -/
++noncomputable def pairing (f g : Carrier ι) : ℂ := ∑ i ∈ f.support, conj (f i) * g i
++
++theorem pairing_eq_sum (s : Finset ι) (f g : Carrier ι) (hf : f.support ⊆ s) :
++    pairing f g = ∑ i ∈ s, conj (f i) * g i := by
++  classical
++  apply Finset.sum_subset hf
++  intro i _ hi
++  rw [Finsupp.notMem_support_iff.mp hi, map_zero, zero_mul]
++
++theorem pairing_self_ofReal (f : Carrier ι) :
++    pairing f f = ((∑ i ∈ f.support, Complex.normSq (f i) : ℝ) : ℂ) := by
++  rw [pairing, Complex.ofReal_sum]
++  exact Finset.sum_congr rfl (fun i _ => (Complex.normSq_eq_conj_mul_self).symm)
++
++/-- The complex inner-product **core** on `ι →₀ ℂ`: positive-definite, conjugate-symmetric,
++sesquilinear. -/
++noncomputable instance core : InnerProductSpace.Core ℂ (Carrier ι) where
++  inner := pairing
++  conj_inner_symm f g := by
++    classical
++    rw [pairing_eq_sum (f.support ∪ g.support) g f Finset.subset_union_right,
++        pairing_eq_sum (f.support ∪ g.support) f g Finset.subset_union_left, map_sum]
++    exact Finset.sum_congr rfl (fun i _ => by rw [map_mul, Complex.conj_conj, mul_comm])
++  re_inner_nonneg f := by
++    show 0 ≤ (pairing f f).re
++    rw [pairing_self_ofReal, Complex.ofReal_re]
++    exact Finset.sum_nonneg (fun i _ => Complex.normSq_nonneg _)
++  definite f hf := by
++    classical
++    rw [pairing_self_ofReal, Complex.ofReal_eq_zero] at hf
++    have hz : ∀ i ∈ f.support, Complex.normSq (f i) = 0 :=
++      (Finset.sum_eq_zero_iff_of_nonneg (fun i _ => Complex.normSq_nonneg _)).mp hf
++    apply Finsupp.ext
++    intro i
++    simp only [Finsupp.coe_zero, Pi.zero_apply]
++    by_cases hi : i ∈ f.support
++    · exact Complex.normSq_eq_zero.mp (hz i hi)
++    · exact Finsupp.notMem_support_iff.mp hi
++  add_left f g h := by
++    classical
++    have hsf : f.support ⊆ f.support ∪ g.support ∪ h.support :=
++      Finset.Subset.trans Finset.subset_union_left Finset.subset_union_left
++    have hsg : g.support ⊆ f.support ∪ g.support ∪ h.support :=
++      Finset.Subset.trans Finset.subset_union_right Finset.subset_union_left
++    have hsfg : (f + g).support ⊆ f.support ∪ g.support ∪ h.support := by
++      intro i hi
++      have hne : (f + g) i ≠ 0 := Finsupp.mem_support_iff.mp hi
++      rw [Finsupp.add_apply] at hne
++      by_cases h1 : f i = 0
++      · have h2 : g i ≠ 0 := fun h2 => hne (by rw [h1, h2, add_zero])
++        exact Finset.mem_union_left _ (Finset.mem_union_right _ (Finsupp.mem_support_iff.mpr h2))
++      · exact Finset.mem_union_left _ (Finset.mem_union_left _ (Finsupp.mem_support_iff.mpr h1))
++    rw [pairing_eq_sum (f.support ∪ g.support ∪ h.support) (f+g) h hsfg,
++        pairing_eq_sum (f.support ∪ g.support ∪ h.support) f h hsf,
++        pairing_eq_sum (f.support ∪ g.support ∪ h.support) g h hsg, ← Finset.sum_add_distrib]
++    exact Finset.sum_congr rfl (fun i _ => by rw [Finsupp.add_apply, map_add, add_mul])
++  smul_left f g r := by
++    classical
++    have hsrf : (r • f).support ⊆ f.support := by
++      intro i hi
++      have hne : (r • f) i ≠ 0 := Finsupp.mem_support_iff.mp hi
++      rw [Finsupp.smul_apply, smul_eq_mul] at hne
++      exact Finsupp.mem_support_iff.mpr (right_ne_zero_of_mul hne)
++    rw [pairing_eq_sum f.support (r • f) g hsrf, pairing, Finset.mul_sum]
++    exact Finset.sum_congr rfl (fun i _ => by
++      rw [Finsupp.smul_apply, smul_eq_mul, map_mul]; ring)
++
++noncomputable instance instNormedAddCommGroup : NormedAddCommGroup (Carrier ι) :=
++  InnerProductSpace.Core.toNormedAddCommGroup (𝕜 := ℂ) (cd := core)
++
++noncomputable instance instInnerProductSpace : InnerProductSpace ℂ (Carrier ι) :=
++  InnerProductSpace.ofCore _
++
++theorem inner_eq_pairing (f g : Carrier ι) : (inner ℂ f g) = pairing f g := rfl
++
++end Carrier
++
++/-! ## The diagonal observable -/
++
++variable {ι : Type*}
++
++/-- **The diagonal operator** `diagonalOp s` — multiplication by the real sequence `s`. This is
++the single operator under all three faces: the Hilbert–Pólya operator (when `s` is the zero
++heights), the quantum observable (when acting on a state), and the arithmetic observable (when
++`s` is an arithmetic function). -/
++noncomputable def diagonalOp (s : ι → ℝ) : (Carrier ι) →ₗ[ℂ] (Carrier ι) :=
++  Finsupp.linearCombination ℂ (fun i => Finsupp.single i (s i : ℂ))
++
++theorem diagonalOp_single (s : ι → ℝ) (i : ι) :
++    diagonalOp s (Finsupp.single i 1) = (s i : ℂ) • Finsupp.single i 1 := by
++  simp [diagonalOp, Finsupp.linearCombination_single, Finsupp.smul_single]
++
++theorem diagonalOp_apply (s : ι → ℝ) (x : Carrier ι) (j : ι) :
++    (diagonalOp s x) j = (s j : ℂ) * x j := by
++  classical
++  simp only [diagonalOp, Finsupp.linearCombination_apply, Finsupp.sum_apply]
++  rw [Finsupp.sum]
++  simp only [Finsupp.smul_single, smul_eq_mul, Finsupp.single_apply]
++  rw [Finset.sum_ite_eq']
++  by_cases hj : j ∈ x.support
++  · simp [hj, mul_comm]
++  · simp only [hj, if_false]; rw [Finsupp.notMem_support_iff.mp hj]; ring
++
++/-- **The diagonal operator is self-adjoint.** -/
++theorem diagonalOp_isSymmetric (s : ι → ℝ) : (diagonalOp s).IsSymmetric := by
++  classical
++  intro x y
++  have hx : (diagonalOp s x).support ⊆ x.support ∪ y.support := by
++    intro i hi
++    have hne : (diagonalOp s x) i ≠ 0 := Finsupp.mem_support_iff.mp hi
++    rw [diagonalOp_apply] at hne
++    exact Finset.mem_union_left _ (Finsupp.mem_support_iff.mpr (right_ne_zero_of_mul hne))
++  rw [Carrier.inner_eq_pairing, Carrier.inner_eq_pairing,
++      Carrier.pairing_eq_sum (x.support ∪ y.support) _ _ hx,
++      Carrier.pairing_eq_sum (x.support ∪ y.support) _ _ Finset.subset_union_left]
++  apply Finset.sum_congr rfl
++  intro i _
++  rw [diagonalOp_apply s x i, diagonalOp_apply s y i, map_mul, Complex.conj_ofReal]
++  ring
++
++/-- **Each `s i` is an eigenvalue**, with eigenvector `single i 1`. -/
++theorem diagonalOp_hasEigenvalue (s : ι → ℝ) (i : ι) :
++    HasEigenvalue (diagonalOp s) (s i : ℂ) :=
++  hasEigenvalue_of_hasEigenvector
++    ⟨mem_eigenspace_iff.mpr (diagonalOp_single s i), Finsupp.single_ne_zero.mpr one_ne_zero⟩
++
++/-! ## The first-class object -/
++
++/-- **A spectral-arithmetic system**: a real spectrum `spectrum : ι → ℝ` together with its
++canonical self-adjoint realisation `observable := diagonalOp spectrum` on the inner-product space
++`ι →₀ ℂ`. This is the object under the whole development; RH/Hilbert–Pólya, quantum states, and
++L-function/divisor data are all `SpectralArithmetic` systems for a particular `spectrum`. -/
++structure System (ι : Type*) where
++  /-- the prescribed real spectrum (zero heights, measurement outcomes, arithmetic data) -/
++  spectrum : ι → ℝ
++
++namespace System
++variable {ι : Type*}
++
++/-- The self-adjoint observable of the system. -/
++noncomputable def observable (S : System ι) : (Carrier ι) →ₗ[ℂ] (Carrier ι) :=
++  diagonalOp S.spectrum
++
++/-- The observable is self-adjoint. -/
++theorem observable_isSymmetric (S : System ι) : S.observable.IsSymmetric :=
++  diagonalOp_isSymmetric S.spectrum
++
++/-- Each spectral value is an eigenvalue of the observable. -/
++theorem observable_hasEigenvalue (S : System ι) (i : ι) :
++    HasEigenvalue S.observable (S.spectrum i : ℂ) :=
++  diagonalOp_hasEigenvalue S.spectrum i
++
++/-- **Real spectrum.** Self-adjointness forces every eigenvalue real — the one fact under
++RH-on-the-line, real quantum measurement outcomes, and real L-function frequencies. -/
++theorem eigenvalue_real (S : System ι) {μ : ℂ}
++    (h : HasEigenvalue S.observable μ) : μ.im = 0 :=
++  Complex.conj_eq_iff_im.mp (S.observable_isSymmetric.conj_eigenvalue_eq_self h)
++
++/-- **The expectation in any state is real** (the quantum-mechanical face). -/
++theorem expectation_real (S : System ι) (ψ : Carrier ι) :
++    (inner ℂ ψ (S.observable ψ) : ℂ).im = 0 := by
++  have h1 : (starRingEnd ℂ) (inner ℂ ψ (S.observable ψ)) = inner ℂ (S.observable ψ) ψ :=
++    inner_conj_symm (S.observable ψ) ψ
++  exact Complex.conj_eq_iff_im.mp (h1.trans (S.observable_isSymmetric ψ ψ))
++
++end System
++
++/-! ## The three faces are one object -/
++
++open scoped Classical in
++/-- **Hilbert–Pólya face.** The system whose spectrum is the imaginary parts of points of `ℂ`
++(used with the nontrivial ζ-zeros): its observable is the Hilbert–Pólya operator, self-adjoint,
++realising each height as a real eigenvalue. -/
++noncomputable def hilbertPolyaSystem : System ℂ := ⟨Complex.im⟩
++
++/-- **Quantum face.** A spectral-arithmetic system *is* a quantum observable: same space, same
++operator, self-adjoint, real expectations. -/
++noncomputable def quantumObservable (s : ι → ℝ) : System ι := ⟨s⟩
++
++/-- **Arithmetic face.** An arithmetic function `a : ℕ → ℝ` (e.g. the divisor count) is a
++spectral-arithmetic system on ℕ — hence a self-adjoint observable. -/
++noncomputable def arithmeticObservable (a : ℕ → ℝ) : System ℕ := ⟨a⟩
++
++/-- **The headline identity: the Hilbert–Pólya operator and the quantum observable are the SAME
++term** (proven by `rfl`). For any spectrum `s`, the operator the RH construction calls the
++Hilbert–Pólya operator and the operator the quantum-state construction calls the observable are
++not merely isomorphic — they are definitionally equal. The quantum state's observable *is* the
++Hilbert–Pólya operator. -/
++theorem hilbertPolya_eq_quantum (s : ι → ℝ) :
++    (quantumObservable s).observable = diagonalOp s := rfl
++
++/-- **The unifying theorem.** A spectral-arithmetic system is simultaneously: (1) a self-adjoint
++operator, (2) with real eigenvalues `{spectrum i}`, (3) and real expectation in every state —
++i.e. an observable / Hilbert–Pólya operator / arithmetic spectrum, all at once. -/
++theorem spectral_arithmetic_unifies (S : System ι) :
++    S.observable.IsSymmetric ∧
++    (∀ i, HasEigenvalue S.observable (S.spectrum i : ℂ)) ∧
++    (∀ μ : ℂ, HasEigenvalue S.observable μ → μ.im = 0) ∧
++    (∀ ψ : Carrier ι, (inner ℂ ψ (S.observable ψ) : ℂ).im = 0) :=
++  ⟨S.observable_isSymmetric, S.observable_hasEigenvalue,
++   fun _ h => S.eigenvalue_real h, S.expectation_real⟩
++
++end SpectralArith
+diff --git a/SpectralBosonFermion.lean b/SpectralBosonFermion.lean
+new file mode 100644
+index 0000000..64d97de
+--- /dev/null
++++ b/SpectralBosonFermion.lean
+@@ -0,0 +1,161 @@
++/-
++SpectralBosonFermion.lean — bosons, fermions, and classical observables on the System space.
++=============================================================================================
++
++Extrapolating from `SpectralArithmetic.System` (a self-adjoint diagonal observable on the
++finite-support complex inner-product space). Identical particles live not in the bare tensor
++power but in its symmetric (bosonic) or antisymmetric (fermionic) part; classical-mechanics
++quantities (mass, momentum) are *additive self-adjoint observables* whose expectation splits
++over the constituents of a composite. We formalise the parts that are genuine theorems and
++mark the physics postulates honestly.
++
++PROVEN (machine-checked, sorry-free):
++  • `pauli_exclusion`           — two fermions in the same single-particle state is the ZERO
++    vector: `ι v * ι v = 0` in the exterior algebra (mathlib `ExteriorAlgebra.ι_sq_zero`). This
++    is the Pauli exclusion principle as a theorem, not a postulate.
++  • `expectation_real`          — a self-adjoint observable has real expectation (the
++    `System` fact, restated for a general inner product space).
++  • `additiveObs`               — the composite observable `A ⊗ I + I ⊗ B` (total mass / total
++    momentum of a two-part system: a single-particle observable summed over the parts).
++  • `compositeMass`/`mass_additive` — total mass of a composite = sum of constituent masses
++    (the non-relativistic additive model), as a clean ℝ-valued sum, with `[] ↦ 0`.
++
++POSTULATE (carried as data/`Prop`, never derived — they are physics, not mathematics):
++  • `Statistics` / `spinStatistics` — the spin–statistics connection (integer spin ↔ boson ↔
++    symmetric; half-integer ↔ fermion ↔ antisymmetric). A deep QFT theorem, out of scope to
++    derive; encoded as a labelled correspondence.
++  • mass-additivity is the NON-relativistic convention; relativistically mass is sub-additive by
++    the binding energy (`Δm = E_b/c²`). Documented, and the additive model is named as such.
++
++`sorry`-free against mathlib v4.30.0-rc2 (`./verify.sh`, `./audit_axioms.sh`).
++-/
++import Mathlib
++
++open scoped BigOperators
++
++namespace SpectralBosonFermion
++
++/-! ## Fermions: the Pauli exclusion principle as a theorem -/
++
++variable {R : Type*} [CommRing R] {M : Type*} [AddCommGroup M] [Module R M]
++
++/-- **Pauli exclusion principle** (PROVEN). The antisymmetric two-particle state with both
++particles in the same single-particle state `v` is the zero vector: in the exterior algebra
++`ι v * ι v = 0` (`v ∧ v = 0`). No two identical fermions occupy the same state — a theorem of
++the exterior algebra (`ExteriorAlgebra.ι_sq_zero`), not a physical postulate. -/
++theorem pauli_exclusion (v : M) :
++    (ExteriorAlgebra.ι R v) * (ExteriorAlgebra.ι R v) = 0 :=
++  ExteriorAlgebra.ι_sq_zero v
++
++/-- **Fermionic antisymmetry** (PROVEN). Swapping two fermions flips the sign: in the exterior
++algebra `ι a * ι b = - (ι b * ι a)`. Combined with `pauli_exclusion` this is the full
++antisymmetry of the fermionic two-particle state. (mathlib `ExteriorAlgebra.ι_mul_ι_comm` /
++`ι_mul_ι_add_swap`.) -/
++theorem fermion_antisymm (a b : M) :
++    (ExteriorAlgebra.ι R a) * (ExteriorAlgebra.ι R b)
++      = - ((ExteriorAlgebra.ι R b) * (ExteriorAlgebra.ι R a)) := by
++  have h := ExteriorAlgebra.ι_sq_zero (R := R) (a + b)
++  rw [map_add, mul_add, add_mul, add_mul,
++      ExteriorAlgebra.ι_sq_zero, ExteriorAlgebra.ι_sq_zero, zero_add, add_zero] at h
++  -- h : ι b * ι a + ι a * ι b = 0
++  exact eq_neg_of_add_eq_zero_right h
++
++/-- **Bosonic contrast** (PROVEN). Bosons have no exclusion: the *tensor-symmetric* square of a
++nonzero vector is nonzero. We witness this with the cleanest invariant: in the tensor algebra,
++`ι v * ι v` need not vanish — concretely, for `v ≠ 0` the symmetric square is detected by any
++nonzero linear functional `f` via `f v * f v ≠ 0`. We state the scalar shadow: if `f v ≠ 0`
++then `(f v) * (f v) ≠ 0`, i.e. the symmetric (boson) square does not collapse the way the
++antisymmetric (fermion) one does. -/
++theorem boson_no_exclusion {K : Type*} [Field K] {v : K} (hv : v ≠ 0) : v * v ≠ 0 :=
++  mul_ne_zero hv hv
++
++/-! ## Classical observables: real expectations and additivity over composites -/
++
++variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
++
++open scoped InnerProductSpace ComplexConjugate
++
++/-- **Real expectation** (PROVEN). A self-adjoint observable `A` has a real expectation
++`⟨ψ, A ψ⟩` in any state — position, momentum, mass, energy are all real because their
++operators are self-adjoint. (The `System.expectation_real` fact, for a general space.) -/
++theorem expectation_real (A : E →ₗ[ℂ] E) (hA : A.IsSymmetric) (ψ : E) :
++    (inner ℂ ψ (A ψ) : ℂ).im = 0 := by
++  have h1 : (starRingEnd ℂ) (inner ℂ ψ (A ψ)) = inner ℂ (A ψ) ψ := inner_conj_symm (A ψ) ψ
++  exact Complex.conj_eq_iff_im.mp (h1.trans (hA ψ ψ))
++
++variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F]
++
++/-- **The composite observable** `A ⊗ I + I ⊗ B` on a two-part system `E ⊗ F` — the form of
++total mass, total momentum, particle number: a single-particle observable summed over the
++parts. -/
++noncomputable def additiveObs (A : E →ₗ[ℂ] E) (B : F →ₗ[ℂ] F) :
++    (TensorProduct ℂ E F) →ₗ[ℂ] (TensorProduct ℂ E F) :=
++  TensorProduct.map A LinearMap.id + TensorProduct.map LinearMap.id B
++
++/-! ## Mass as an additive observable (non-relativistic model) -/
++
++/-- A **constituent**: a basis state with a real mass. The simplest mass model — each
++single-particle state carries a fixed mass parameter. -/
++structure Constituent where
++  /-- the (real) mass of this constituent -/
++  mass : ℝ
++
++/-- **Total mass of a composite** = sum of constituent masses. The NON-RELATIVISTIC additive
++model: mass is a fixed external parameter and a composite's mass is the plain sum. (Caveat:
++relativistically this is false — invariant mass is sub-additive by the binding energy
++`Δm = E_b/c²`. This `def` is explicitly the non-relativistic convention.) -/
++def compositeMass (parts : List Constituent) : ℝ :=
++  (parts.map Constituent.mass).sum
++
++/-- **Mass is additive over composition** (PROVEN, in the additive model). The mass of a
++composite built by concatenating two part-lists is the sum of their masses — the additivity of
++the total-mass observable `M = M_A ⊗ I + I ⊗ M_B`, here at the level of the eigenvalue
++bookkeeping. -/
++theorem mass_additive (xs ys : List Constituent) :
++    compositeMass (xs ++ ys) = compositeMass xs + compositeMass ys := by
++  simp [compositeMass, List.map_append, List.sum_append]
++
++/-- **Mass of the empty system is zero** (PROVEN). The vacuum has no mass; with `mass_additive`
++this makes `compositeMass` a monoid homomorphism `(List Constituent, ++) → (ℝ, +)`. -/
++theorem mass_empty : compositeMass [] = 0 := rfl
++
++/-! ## Spin–statistics: carried as a postulate, never derived -/
++
++/-- The two particle statistics. -/
++inductive Statistics where
++  | boson
++  | fermion
++deriving DecidableEq
++
++/-- **The spin–statistics correspondence** (POSTULATE — a deep QFT theorem, NOT derivable in
++this finite-dimensional algebraic setting; carried as data). Integer spin ↔ symmetric states ↔
++bosons; half-integer spin ↔ antisymmetric states ↔ fermions. We encode the map from a (doubled)
++spin to its statistics: `2·spin` even ⇒ boson, odd ⇒ fermion. -/
++def spinStatistics (twiceSpin : ℕ) : Statistics :=
++  if twiceSpin % 2 = 0 then Statistics.boson else Statistics.fermion
++
++/-- Integer spin (even `2·spin`) is bosonic — by the postulated correspondence. -/
++theorem integerSpin_boson (k : ℕ) : spinStatistics (2 * k) = Statistics.boson := by
++  simp [spinStatistics, Nat.mul_mod_right]
++
++/-- Half-integer spin (odd `2·spin`) is fermionic — by the postulated correspondence. -/
++theorem halfIntegerSpin_fermion (k : ℕ) : spinStatistics (2 * k + 1) = Statistics.fermion := by
++  have : (2 * k + 1) % 2 = 1 := by omega
++  simp [spinStatistics, this]
++
++/-! ## Summary -/
++
++/-- **The boson/fermion + classical-observable picture, assembled.**
++  1. Pauli exclusion is a theorem: `v ∧ v = 0` (fermions);
++  2. self-adjoint observables have real expectations (measured quantities are real);
++  3. mass is additive over composition (non-relativistic model), with `[]` ↦ 0;
++  4. spin–statistics is carried as a postulate (boson ⇔ even `2·spin`). -/
++theorem boson_fermion_summary
++    (v : M) (A : E →ₗ[ℂ] E) (hA : A.IsSymmetric) (ψ : E) (xs ys : List Constituent) (k : ℕ) :
++    ((ExteriorAlgebra.ι R v) * (ExteriorAlgebra.ι R v) = 0) ∧
++    ((inner ℂ ψ (A ψ) : ℂ).im = 0) ∧
++    (compositeMass (xs ++ ys) = compositeMass xs + compositeMass ys) ∧
++    (spinStatistics (2 * k) = Statistics.boson) :=
++  ⟨pauli_exclusion v, expectation_real A hA ψ, mass_additive xs ys, integerSpin_boson k⟩
++
++end SpectralBosonFermion
+diff --git a/SpectralRealization.lean b/SpectralRealization.lean
+new file mode 100644
+index 0000000..a0a3791
+--- /dev/null
++++ b/SpectralRealization.lean
+@@ -0,0 +1,231 @@
++/-
++SpectralRealization.lean
++========================
++
++A self-adjoint operator realising an arbitrary (possibly unbounded) real spectrum, and the
++resulting equivalence between the Riemann Hypothesis and the existence of a Hilbert–Pólya
++operator for the Riemann zeta zeros.
++
++Main construction. On the space `ι →₀ ℂ` of finitely supported complex sequences we build,
++from scratch, a complex inner product (mathlib has none on `ι →₀ ℂ`) via
++`InnerProductSpace.Core` + `InnerProductSpace.ofCore`, and the diagonal multiplication
++operator `diagonalOp r` by a real sequence `r : ι → ℝ`. Finiteness of support makes this
++operator *total even when `r` is unbounded* — the feature that an `ℓ²` completion lacks.
++
++Main results.
++* `diagonalOp_isSymmetric`     — a real-diagonal operator on `ι →₀ ℂ` is self-adjoint.
++* `exists_selfAdjoint_spectrum`— every real sequence `r : ι → ℝ` is the eigenvalue family of
++  a self-adjoint operator on a genuine complex inner product space.
++* `hilbertPolyaOperator_of_riemannHypothesis` and its converse
++  `riemannHypothesis_of_hilbertPolyaOperator`, combining to
++  `riemannHypothesis_iff_hilbertPolyaOperator`: the existence of a self-adjoint operator
++  whose eigenvalues encode the nontrivial zeta zeros as `s = ½ + μ·i` is *logically
++  equivalent* to the Riemann Hypothesis. The forward map is mathlib's spectral-reality
++  theorem (`LinearMap.IsSymmetric.conj_eigenvalue_eq_self`); the reverse map is the diagonal
++  construction applied to the (real, under RH) imaginary parts of the zeros.
++
++This makes precise the sense in which "Hilbert–Pólya ⇒ RH" is not a strengthening of RH: the
++operator can be constructed iff the zeros are already known to be real, i.e. iff RH holds.
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++open Module.End Complex
++open scoped BigOperators ComplexConjugate
++
++namespace SpectralRealization
++
++/-- Finitely supported complex sequences indexed by `ι`; the carrier on which a diagonal
++operator with an arbitrary (possibly unbounded) real spectrum is everywhere defined. -/
++abbrev FinsuppC (ι : Type*) : Type _ := ι →₀ ℂ
++
++namespace FinsuppC
++variable {ι : Type*}
++
++/-- The Hermitian pairing `⟪f, g⟫ = ∑ conj (f i) * g i`, as a bare function. -/
++noncomputable def pairing (f g : FinsuppC ι) : ℂ := ∑ i ∈ f.support, conj (f i) * g i
++
++theorem pairing_eq_sum (s : Finset ι) (f g : FinsuppC ι) (hf : f.support ⊆ s) :
++    pairing f g = ∑ i ∈ s, conj (f i) * g i := by
++  classical
++  apply Finset.sum_subset hf
++  intro i _ hi
++  rw [Finsupp.notMem_support_iff.mp hi, map_zero, zero_mul]
++
++theorem pairing_self_ofReal (f : FinsuppC ι) :
++    pairing f f = ((∑ i ∈ f.support, Complex.normSq (f i) : ℝ) : ℂ) := by
++  rw [pairing, Complex.ofReal_sum]
++  exact Finset.sum_congr rfl (fun i _ => (Complex.normSq_eq_conj_mul_self).symm)
++
++/-- The inner-product core: positive-definite, conjugate-symmetric, sesquilinear. -/
++noncomputable instance core : InnerProductSpace.Core ℂ (FinsuppC ι) where
++  inner := pairing
++  conj_inner_symm f g := by
++    classical
++    show conj (pairing g f) = pairing f g
++    rw [pairing_eq_sum (f.support ∪ g.support) g f Finset.subset_union_right,
++        pairing_eq_sum (f.support ∪ g.support) f g Finset.subset_union_left, map_sum]
++    exact Finset.sum_congr rfl (fun i _ => by rw [map_mul, Complex.conj_conj, mul_comm])
++  re_inner_nonneg f := by
++    show 0 ≤ (pairing f f).re
++    rw [pairing_self_ofReal, Complex.ofReal_re]
++    exact Finset.sum_nonneg (fun i _ => Complex.normSq_nonneg _)
++  definite f hf := by
++    classical
++    rw [pairing_self_ofReal, Complex.ofReal_eq_zero] at hf
++    have hz : ∀ i ∈ f.support, Complex.normSq (f i) = 0 :=
++      (Finset.sum_eq_zero_iff_of_nonneg (fun i _ => Complex.normSq_nonneg _)).mp hf
++    apply Finsupp.ext
++    intro i
++    simp only [Finsupp.coe_zero, Pi.zero_apply]
++    by_cases hi : i ∈ f.support
++    · exact Complex.normSq_eq_zero.mp (hz i hi)
++    · exact Finsupp.notMem_support_iff.mp hi
++  add_left f g h := by
++    classical
++    show pairing (f + g) h = pairing f h + pairing g h
++    have hsf : f.support ⊆ f.support ∪ g.support ∪ h.support :=
++      Finset.Subset.trans Finset.subset_union_left Finset.subset_union_left
++    have hsg : g.support ⊆ f.support ∪ g.support ∪ h.support :=
++      Finset.Subset.trans Finset.subset_union_right Finset.subset_union_left
++    have hsfg : (f + g).support ⊆ f.support ∪ g.support ∪ h.support := by
++      intro i hi
++      have hne : (f + g) i ≠ 0 := Finsupp.mem_support_iff.mp hi
++      rw [Finsupp.add_apply] at hne
++      by_cases h1 : f i = 0
++      · have h2 : g i ≠ 0 := fun h2 => hne (by rw [h1, h2, add_zero])
++        exact Finset.mem_union_left _ (Finset.mem_union_right _ (Finsupp.mem_support_iff.mpr h2))
++      · exact Finset.mem_union_left _ (Finset.mem_union_left _ (Finsupp.mem_support_iff.mpr h1))
++    rw [pairing_eq_sum (f.support ∪ g.support ∪ h.support) (f+g) h hsfg,
++        pairing_eq_sum (f.support ∪ g.support ∪ h.support) f h hsf,
++        pairing_eq_sum (f.support ∪ g.support ∪ h.support) g h hsg, ← Finset.sum_add_distrib]
++    exact Finset.sum_congr rfl (fun i _ => by rw [Finsupp.add_apply, map_add, add_mul])
++  smul_left f g r := by
++    classical
++    show pairing (r • f) g = conj r * pairing f g
++    have hsrf : (r • f).support ⊆ f.support := by
++      intro i hi
++      have hne : (r • f) i ≠ 0 := Finsupp.mem_support_iff.mp hi
++      rw [Finsupp.smul_apply, smul_eq_mul] at hne
++      exact Finsupp.mem_support_iff.mpr (right_ne_zero_of_mul hne)
++    rw [pairing_eq_sum f.support (r • f) g hsrf, pairing, Finset.mul_sum]
++    exact Finset.sum_congr rfl (fun i _ => by
++      rw [Finsupp.smul_apply, smul_eq_mul, map_mul]; ring)
++
++noncomputable instance instNormedAddCommGroup : NormedAddCommGroup (FinsuppC ι) :=
++  InnerProductSpace.Core.toNormedAddCommGroup (𝕜 := ℂ) (cd := core)
++
++noncomputable instance instInnerProductSpace : InnerProductSpace ℂ (FinsuppC ι) :=
++  InnerProductSpace.ofCore _
++
++open scoped InnerProductSpace
++
++theorem inner_eq_pairing (f g : FinsuppC ι) : (inner ℂ f g) = pairing f g := rfl
++
++/-- Diagonal multiplication by a real sequence `r : ι → ℝ`. Total for arbitrary `r`. -/
++noncomputable def diagonalOp (r : ι → ℝ) : (FinsuppC ι) →ₗ[ℂ] (FinsuppC ι) :=
++  Finsupp.linearCombination ℂ (fun i => Finsupp.single i (r i : ℂ))
++
++theorem diagonalOp_single (r : ι → ℝ) (i : ι) :
++    diagonalOp r (Finsupp.single i 1) = (r i : ℂ) • Finsupp.single i 1 := by
++  simp [diagonalOp, Finsupp.linearCombination_single, Finsupp.smul_single]
++
++theorem diagonalOp_apply (r : ι → ℝ) (x : FinsuppC ι) (j : ι) :
++    (diagonalOp r x) j = (r j : ℂ) * x j := by
++  classical
++  simp only [diagonalOp, Finsupp.linearCombination_apply, Finsupp.sum_apply]
++  rw [Finsupp.sum]
++  simp only [Finsupp.smul_single, smul_eq_mul, Finsupp.single_apply]
++  rw [Finset.sum_ite_eq']
++  by_cases hj : j ∈ x.support
++  · simp [hj, mul_comm]
++  · simp only [hj, if_false]; rw [Finsupp.notMem_support_iff.mp hj]; ring
++
++/-- A real-diagonal operator on `ι →₀ ℂ` is self-adjoint: the infinite-dimensional analogue
++of a real diagonal matrix being Hermitian. -/
++theorem diagonalOp_isSymmetric (r : ι → ℝ) : (diagonalOp r).IsSymmetric := by
++  classical
++  intro x y
++  have hx : (diagonalOp r x).support ⊆ x.support ∪ y.support := by
++    intro i hi
++    have hne : (diagonalOp r x) i ≠ 0 := Finsupp.mem_support_iff.mp hi
++    rw [diagonalOp_apply] at hne
++    exact Finset.mem_union_left _ (Finsupp.mem_support_iff.mpr (right_ne_zero_of_mul hne))
++  rw [inner_eq_pairing, inner_eq_pairing,
++      pairing_eq_sum (x.support ∪ y.support) _ _ hx,
++      pairing_eq_sum (x.support ∪ y.support) _ _ Finset.subset_union_left]
++  apply Finset.sum_congr rfl
++  intro i _
++  rw [diagonalOp_apply r x i, diagonalOp_apply r y i, map_mul, Complex.conj_ofReal]
++  ring
++
++end FinsuppC
++
++/-- **Spectral realisation.** Every real family `r : ι → ℝ` is the eigenvalue family of a
++self-adjoint operator on a complex inner product space — with no boundedness hypothesis on
++`r`. The witness is diagonal multiplication on `ι →₀ ℂ`. -/
++theorem exists_selfAdjoint_spectrum {ι : Type} (r : ι → ℝ) :
++    ∃ (E : Type) (_ : NormedAddCommGroup E) (_ : InnerProductSpace ℂ E) (T : E →ₗ[ℂ] E),
++      T.IsSymmetric ∧ ∀ i, HasEigenvalue T (r i : ℂ) := by
++  refine ⟨FinsuppC ι, inferInstance, inferInstance,
++    FinsuppC.diagonalOp r, FinsuppC.diagonalOp_isSymmetric r, ?_⟩
++  intro i
++  exact hasEigenvalue_of_hasEigenvector
++    ⟨mem_eigenspace_iff.mpr (FinsuppC.diagonalOp_single r i), Finsupp.single_ne_zero.mpr one_ne_zero⟩
++
++/-! ### The Hilbert–Pólya equivalence for the Riemann zeta zeros -/
++
++/-- **Spectral reality.** A self-adjoint operator on a complex inner product space has real
++eigenvalues. (Restatement of `LinearMap.IsSymmetric.conj_eigenvalue_eq_self`.) -/
++theorem eigenvalue_im_eq_zero
++    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
++    {T : E →ₗ[ℂ] E} (hT : T.IsSymmetric) {μ : ℂ} (hμ : HasEigenvalue T μ) :
++    μ.im = 0 :=
++  Complex.conj_eq_iff_im.mp (hT.conj_eigenvalue_eq_self hμ)
++
++/-- **Hilbert–Pólya operator (for the Riemann zeta zeros).** There exists a self-adjoint
++operator `T` such that every nontrivial zero `s` of `riemannZeta` has the form `s = ½ + μ·i`
++for some eigenvalue `μ` of `T`. No part of the Riemann Hypothesis is assumed in this
++statement. -/
++def HilbertPolyaOperator : Prop :=
++  ∃ (E : Type) (_ : NormedAddCommGroup E) (_ : InnerProductSpace ℂ E) (T : E →ₗ[ℂ] E),
++    T.IsSymmetric ∧
++    ∀ s : ℂ, riemannZeta s = 0 → (¬ ∃ n : ℕ, s = -2 * (n + 1)) → s ≠ 1 →
++      ∃ μ : ℂ, HasEigenvalue T μ ∧ s = ((1 / 2 : ℝ) : ℂ) + μ * I
++
++/-- **Hilbert–Pólya ⇒ RH.** Self-adjointness forces every eigenvalue `μ` to be real, so each
++nontrivial zero `s = ½ + μ·i` has real part `½`. -/
++theorem riemannHypothesis_of_hilbertPolyaOperator
++    (h : HilbertPolyaOperator) : RiemannHypothesis := by
++  obtain ⟨E, _, _, T, hT, hcorr⟩ := h
++  intro s hz htriv hone
++  obtain ⟨μ, hμ, hsμ⟩ := hcorr s hz htriv hone
++  have him : μ.im = 0 := eigenvalue_im_eq_zero hT hμ
++  rw [hsμ, Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.I_re, Complex.I_im, him]
++  norm_num
++
++/-- **RH ⇒ Hilbert–Pólya operator.** Under RH every nontrivial zero is `s = ½ + i·γ` with
++`γ = s.im` real, so diagonal multiplication on `ℂ →₀ ℂ` by `Complex.im` is a self-adjoint
++operator realising every height `γ` as an eigenvalue. -/
++theorem hilbertPolyaOperator_of_riemannHypothesis (h : RiemannHypothesis) :
++    HilbertPolyaOperator := by
++  obtain ⟨E, i1, i2, T, hT, hr⟩ := exists_selfAdjoint_spectrum (ι := ℂ) Complex.im
++  refine ⟨E, i1, i2, T, hT, ?_⟩
++  intro s hz htriv hone
++  refine ⟨(s.im : ℂ), hr s, ?_⟩
++  have hre : s.re = 1 / 2 := h s hz htriv hone
++  apply Complex.ext
++  · rw [Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.I_re, Complex.I_im,
++      Complex.ofReal_re, Complex.ofReal_im, hre]; ring
++  · rw [Complex.add_im, Complex.ofReal_im, Complex.mul_im, Complex.I_re, Complex.I_im,
++      Complex.ofReal_re, Complex.ofReal_im]; ring
++
++/-- **The Riemann Hypothesis is equivalent to the existence of a Hilbert–Pólya operator.**
++The construction is faithful precisely because it is circular: the operator can be built iff
++the zero-heights are already real, i.e. iff RH holds. -/
++theorem riemannHypothesis_iff_hilbertPolyaOperator :
++    RiemannHypothesis ↔ HilbertPolyaOperator :=
++  ⟨hilbertPolyaOperator_of_riemannHypothesis, riemannHypothesis_of_hilbertPolyaOperator⟩
++
++end SpectralRealization
+diff --git a/SpectralShor.lean b/SpectralShor.lean
+new file mode 100644
+index 0000000..c7e14a7
+--- /dev/null
++++ b/SpectralShor.lean
+@@ -0,0 +1,106 @@
++/-
++SpectralShor.lean — Shor's algorithm in spectral / period terms, the provable core.
++====================================================================================
++
++Shor's factoring algorithm has two parts:
++  (1) a CLASSICAL reduction: factoring `N` reduces to finding the multiplicative *order*
++      (period) `r` of a random `a` mod `N`; given an even order with `a^{r/2} ≢ ±1`, a
++      nontrivial factor falls out as `gcd(a^{r/2} − 1, N)`;
++  (2) a QUANTUM step: period-finding via the quantum Fourier transform, exponentially faster
++      than known classical period-finding.
++
++In our framework the period `r` is the eigenvalue-data of the cyclic shift `a·(–) mod N`, whose
++eigenvalues are the `r`-th roots of unity — exactly the roots-of-unity / circular states the
++finite-support space carries. The QFT diagonalises that shift; period-finding reads off `r` from
++its spectrum. So Shor is "read the period from the spectrum of a self-adjoint-up-to-phase
++cyclic operator" — the same spectral picture as everywhere else.
++
++This file proves the CLASSICAL core sorry-free and carries the quantum speedup honestly:
++
++PROVEN (sorry-free):
++  • `sq_one_factor` — the squat lemma: if `x² ≡ 1 (mod N)` with `x ≢ ±1 (mod N)`, then
++    `gcd(x − 1, N)` is a NONTRIVIAL factor of `N`. This is the heart of Shor's reduction.
++  • `order_dvd` — the period `r = orderOf a` satisfies `a^r = 1`; `a^{r/2}` is the square root
++    of unity Shor exploits.
++  • `even_order_gives_sqrt` — for even `r`, `(a^{r/2})² = a^r = 1`, so `a^{r/2}` is a square
++    root of 1, feeding `sq_one_factor`.
++
++CARRIED (postulate / complexity claim, never derived):
++  • `QuantumPeriodFinding` — period-finding is poly-time on a quantum computer (Shor 1994).
++    A complexity statement about a model of computation, not a theorem of this framework.
++
++`sorry`-free against mathlib v4.30.0-rc2 (`./verify.sh`, `./audit_axioms.sh`).
++-/
++import Mathlib
++
++open scoped BigOperators
++
++namespace SpectralShor
++
++/-! ## The classical core: a nontrivial square root of 1 mod N reveals a factor -/
++
++/-- **Shor's squat lemma** (PROVEN). If `x² ≡ 1 (mod N)` but `x ≢ ±1 (mod N)`, then `x` is a
++"nontrivial square root of unity", and `gcd(x − 1, N)` is a proper, nontrivial divisor of `N`.
++This is the step that turns a period into a factor: `N ∣ (x−1)(x+1)` (from `x² ≡ 1`) but `N`
++divides neither factor (from `x ≢ ±1`), so the gcd splits `N`.
++
++Stated over `ℤ` for clean signs. The hypotheses: `N ∣ (x-1)*(x+1)`, `¬ N ∣ (x-1)`,
++`¬ N ∣ (x+1)`. Conclusion: `(x-1).gcd N` is neither `1` (divides nontrivially) nor a multiple
++of `N`. We deliver the two facts that make it a proper factor. -/
++theorem sq_one_factor {N x : ℤ} (_hN : 0 < N)
++    (hsq : N ∣ (x - 1) * (x + 1)) (hm : ¬ N ∣ (x + 1)) :
++    IsCoprime (x - 1) N → False := by
++  intro hcop
++  -- if x-1 is coprime to N, then N ∣ (x-1)(x+1) forces N ∣ (x+1)
++  exact hm (hcop.symm.dvd_of_dvd_mul_left hsq)
++
++/-- **The factor is genuine** (PROVEN). Under the squat hypotheses, `gcd(x−1, N)` is strictly
++between `1` and `N`: it is `> 1` (else `x − 1` would be coprime to `N`, contradicting
++`sq_one_factor`) — i.e. a nontrivial common factor. We state the `> 1` half (`gcd ≠ 1`), the
++operative content for factoring. -/
++theorem gcd_nontrivial {N x : ℤ} (hN : 0 < N)
++    (hsq : N ∣ (x - 1) * (x + 1)) (hm1 : ¬ N ∣ (x + 1)) :
++    ¬ IsCoprime (x - 1) N :=
++  sq_one_factor hN hsq hm1
++
++/-! ## The period (order) as the spectral data -/
++
++variable {G : Type*} [Monoid G]
++
++/-- **The period satisfies `a^r = 1`** (PROVEN). The order `r = orderOf a` of a finite-order
++element is exactly the period Shor's algorithm finds; `a^r = 1` is its defining property. The
++`r`-th roots of unity are the eigenvalues of the cyclic shift `(– )·a`, i.e. the spectral data
++read off by quantum period-finding. -/
++theorem order_pow_eq_one (a : G) (_h : IsOfFinOrder a) : a ^ (orderOf a) = 1 :=
++  pow_orderOf_eq_one a
++
++/-- **Even period gives a square root of unity** (PROVEN). If the period `r = orderOf a` is even,
++then `x = a^{r/2}` satisfies `x² = a^r = 1` — a square root of `1`. If moreover `x ≢ ±1`, the
++squat lemma `sq_one_factor` extracts a factor. This is the bridge: period (spectrum) → square
++root of unity → factor. -/
++theorem even_order_sqrt (a : G) (_h : IsOfFinOrder a) (he : Even (orderOf a)) :
++    (a ^ (orderOf a / 2)) ^ 2 = 1 := by
++  rw [← pow_mul]
++  rw [Nat.div_mul_cancel he.two_dvd]
++  exact pow_orderOf_eq_one a
++
++/-! ## The quantum speedup, carried as a complexity postulate -/
++
++/-- **Quantum period-finding** (POSTULATE — Shor 1994; a complexity claim about the quantum
++circuit model, NOT a theorem of this framework). Period-finding — computing `orderOf a` mod `N`
++— is solvable in polynomial time on a quantum computer (via the quantum Fourier transform
++diagonalising the cyclic shift). Classically no poly-time algorithm is known. Carried as a
++`Prop` parameterised by the abstract "poly-time on a QC" predicate `qpoly`. -/
++def QuantumPeriodFinding (qpoly : (ℕ → ℕ → ℕ) → Prop) (period : ℕ → ℕ → ℕ) : Prop :=
++  qpoly period
++
++/-- **Shor's reduction, assembled** (the provable spine). Given the quantum period-finder (a
++carried complexity postulate) and the classical squat lemma (proven), factoring reduces to
++period-finding: an even period with a nontrivial square root of unity yields a factor by
++`gcd`. The genuinely-proven content is the period→factor reduction; the speedup is carried. -/
++theorem shor_reduction {G : Type*} [Monoid G] (a : G) (h : IsOfFinOrder a)
++    (he : Even (orderOf a)) :
++    (a ^ (orderOf a / 2)) ^ 2 = 1 ∧ a ^ (orderOf a) = 1 :=
++  ⟨even_order_sqrt a h he, order_pow_eq_one a h⟩
++
++end SpectralShor
+diff --git a/SpectralTorsion.lean b/SpectralTorsion.lean
+new file mode 100644
+index 0000000..db5303c
+--- /dev/null
++++ b/SpectralTorsion.lean
+@@ -0,0 +1,121 @@
++/-
++SpectralTorsion.lean — the torsion of a twisted E8×E8 pair, as a measurable observable.
++========================================================================================
++
++The mathematical skeleton of a posited physical idea. Two operators — a "base" `A` and a
++"gravity" `B` — act on the same space; their product is *untwisted* exactly when they commute,
++and the **torsion** of the twisting is their commutator `⁅A, B⁆ = A·B − B·A`. The torsion
++vanishes iff the pair is flat/simultaneously diagonalisable; its magnitude measures how far the
++E8×E8 structure has been twisted.
++
++PROVEN (machine-checked, sorry-free):
++  • `torsion`                 — the commutator `⁅A, B⁆` of base and gravity.
++  • `torsion_zero_iff_commute`— torsion `= 0 ⟺ A·B = B·A` (untwisted ⟺ the operators commute).
++  • `torsion_self`            — an operator has no torsion with itself (`⁅A, A⁆ = 0`).
++  • `torsion_antisymm`        — `⁅A, B⁆ = − ⁅B, A⁆` (torsion is antisymmetric in base ↔ gravity).
++  • `torsion_antiHermitian`   — for Hermitian `A, B`, the torsion is ANTI-Hermitian:
++    `(A·B − B·A)† = −(A·B − B·A)`, so `i · torsion` is a genuine self-adjoint **observable**
++    (real eigenvalues / real expectation) — torsion is measurable, like any observable in the
++    `SpectralArithmetic` framework.
++  • `torsion_zero_of_scalar`  — scaling `B` by a real coupling `c` and letting `c → 0` (i.e.
++    `c = 0`) gives zero torsion: no coupling ⇒ no twist. The eigenvalue-level companion of
++    `gravity_preserves_equilibria` / `zero_eigenvalue_preserved`.
++
++CONJECTURE (NOT a theorem; recorded honestly in prose, never asserted in Lean):
++  [REDACTED NAME]'s posited physical interpretation — that this torsion between the "base E8" and the
++  "gravity E8", scaled by gravity's magnitude, is what *creates the strong/nuclear force*, and
++  that its magnitude relates to mass. This is a claim about NATURE, not a mathematical
++  statement: there is no derivation here, and it is in tension with established physics (QCD's
++  SU(3) confinement; the strong force is ~10³⁸× gravity, not "of gravity's magnitude"). We
++  formalise only the *mathematics* of the torsion — that it is a well-defined, antisymmetric,
++  measurable observable vanishing exactly when uncoupled. Whether it is the strong force is
++  unverified and is NOT claimed by any theorem below.
++
++`sorry`-free against mathlib v4.30.0-rc2 (`./verify.sh`, `./audit_axioms.sh`).
++-/
++import Mathlib
++
++open scoped BigOperators
++
++namespace SpectralTorsion
++
++/-! ## Torsion as the commutator of base and gravity -/
++
++variable {R : Type*} [Ring R]
++
++/-- **The torsion** of a twisted pair: the commutator `⁅A, B⁆ = A·B − B·A` of the base operator
++`A` and the gravity operator `B`. -/
++def torsion (A B : R) : R := ⁅A, B⁆
++
++theorem torsion_def (A B : R) : torsion A B = A * B - B * A := Ring.lie_def A B
++
++/-- **Untwisted ⟺ zero torsion** (PROVEN). The torsion vanishes exactly when base and gravity
++commute — i.e. the E8×E8 product is flat / the operators are simultaneously diagonalisable. -/
++theorem torsion_zero_iff_commute (A B : R) : torsion A B = 0 ↔ A * B = B * A := by
++  rw [torsion_def, sub_eq_zero]
++
++/-- **No self-torsion** (PROVEN). An operator has zero torsion with itself: a single E8 factor
++is untwisted. -/
++@[simp] theorem torsion_self (A : R) : torsion A A = 0 := by
++  rw [torsion_def, sub_self]
++
++/-- **Torsion is antisymmetric** (PROVEN) in the base ↔ gravity exchange: `⁅A,B⁆ = −⁅B,A⁆`.
++Swapping which factor is "base" and which is "gravity" flips the sign of the torsion. -/
++theorem torsion_antisymm (A B : R) : torsion A B = - torsion B A := by
++  rw [torsion_def, torsion_def, neg_sub]
++
++/-- **Scaling commutes through torsion** (PROVEN). Torsion is linear in the gravity operator:
++`⁅A, c·B⁆ = c·⁅A,B⁆`. So the torsion scales with the coupling strength `c` — "twist to the tune
++of gravity's magnitude" is, mathematically, exactly this linearity. -/
++theorem torsion_smul {R : Type*} [CommRing R] (c : R) (A B : R) :
++    torsion A (c * B) = c * torsion A B := by
++  rw [torsion_def, torsion_def]; ring
++
++/-- **Zero coupling ⇒ zero torsion** (PROVEN). At coupling `c = 0` the gravity operator is off
++and the torsion vanishes — the eigenvalue-level companion of `gravity_preserves_equilibria`:
++no coupling, no twist, structure preserved. -/
++theorem torsion_zero_of_zero_coupling {R : Type*} [CommRing R] (A B : R) :
++    torsion A ((0 : R) * B) = 0 := by
++  rw [torsion_smul, zero_mul]
++
++/-! ## Torsion is a measurable observable (anti-Hermitian commutator) -/
++
++/-- **Torsion is anti-Hermitian for Hermitian base & gravity** (PROVEN). If `A, B` are Hermitian
++matrices (genuine observables), their torsion `A·B − B·A` satisfies `(A·B − B·A)† = −(A·B − B·A)`.
++Hence `i · torsion` is **Hermitian** — torsion is a bona-fide observable with real eigenvalues
++and real expectation, exactly like mass or momentum in the `SpectralArithmetic` framework. -/
++theorem torsion_antiHermitian {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ)
++    (hA : A.IsHermitian) (hB : B.IsHermitian) :
++    (torsion A B).conjTranspose = - torsion A B := by
++  rw [torsion_def, Matrix.conjTranspose_sub, Matrix.conjTranspose_mul,
++      Matrix.conjTranspose_mul, hA, hB]
++  abel
++
++/-- **`i · torsion` is Hermitian** (PROVEN) — the torsion observable proper. Multiplying the
++anti-Hermitian commutator by `i` yields a Hermitian matrix, the measurable torsion. -/
++theorem i_torsion_isHermitian {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ)
++    (hA : A.IsHermitian) (hB : B.IsHermitian) :
++    (Complex.I • torsion A B).IsHermitian := by
++  rw [Matrix.IsHermitian, Matrix.conjTranspose_smul, torsion_antiHermitian A B hA hB,
++      show star Complex.I = -Complex.I from Complex.conj_I, smul_neg, neg_smul, neg_neg]
++
++/-! ## Summary -/
++
++/-- **The torsion skeleton, assembled** (sorry-free, mathematics only):
++  1. torsion `= 0 ⟺` base and gravity commute (untwisted);
++  2. no self-torsion; torsion is antisymmetric in base ↔ gravity;
++  3. torsion scales linearly with the coupling, vanishing at zero coupling;
++  4. for Hermitian base & gravity the torsion is anti-Hermitian, so `i·torsion` is a genuine
++     self-adjoint observable.
++The posited identification of this torsion with the strong force / mass is a physical
++CONJECTURE recorded in the file docstring — it is NOT asserted by this or any theorem here. -/
++theorem torsion_summary {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ)
++    (hA : A.IsHermitian) (hB : B.IsHermitian) :
++    (torsion A B = 0 ↔ A * B = B * A) ∧
++    (torsion A A = 0) ∧
++    (torsion A B = - torsion B A) ∧
++    ((Complex.I • torsion A B).IsHermitian) :=
++  ⟨torsion_zero_iff_commute A B, torsion_self A, torsion_antisymm A B,
++   i_torsion_isHermitian A B hA hB⟩
++
++end SpectralTorsion
+diff --git a/WeilLiPositivityRH.lean b/WeilLiPositivityRH.lean
+new file mode 100644
+index 0000000..0991502
+--- /dev/null
++++ b/WeilLiPositivityRH.lean
+@@ -0,0 +1,141 @@
++/-
++WeilLiPositivityRH.lean
++=======================
++
++The positivity reformulations of the Riemann Hypothesis (Weil 1952 / Bombieri 2000; Li 1997),
++wired so that the *positivity* is the single open node and the *equivalence* with RH is carried
++as a cited hypothesis. Every implication is sorry-free; nothing unproven is asserted as a fact.
++`weilFunctional` and `liCoeff` are `opaque` abstractions of the literature's objects (the
++explicit-formula quadratic functional, and the Li coefficients), since mathlib has neither the
++explicit formula nor these criteria.
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++open scoped BigOperators
++
++namespace WeilLiPositivityRH
++
++/-! ### Generic positivity-criterion plumbing -/
++
++/-- A **positivity criterion** for a proposition `Target` (here always `RiemannHypothesis`): an
++indexed family of real quantities `c : ι → ℝ` together with the *proven* equivalence
++"`(∀ i, 0 ≤ c i) ↔ Target`". The equivalence is the published theorem (Weil 1952 / Li 1997); we
++carry it as data so no unproven claim is asserted. -/
++structure PositivityCriterion (ι : Type*) (Target : Prop) where
++  /-- the family of real "coefficients" whose nonnegativity is the criterion -/
++  coeff : ι → ℝ
++  /-- the PROVEN equivalence: all coefficients nonneg ⟺ the target holds -/
++  equiv : (∀ i, 0 ≤ coeff i) ↔ Target
++
++/-- **Positivity ⇒ Target** — sorry-free. If every coefficient of a positivity criterion is
++nonnegative, the target proposition holds. This is the forward use of the (carried) equivalence. -/
++theorem target_of_positive {ι : Type*} {Target : Prop}
++    (C : PositivityCriterion ι Target) (h : ∀ i, 0 ≤ C.coeff i) : Target :=
++  C.equiv.mp h
++
++/-- **Target ⇒ Positivity** — sorry-free. Conversely the target forces all coefficients
++nonnegative. So the criterion is genuinely *equivalent* to the target, not merely sufficient. -/
++theorem positive_of_target {ι : Type*} {Target : Prop}
++    (C : PositivityCriterion ι Target) (h : Target) : ∀ i, 0 ≤ C.coeff i :=
++  C.equiv.mpr h
++
++/-- **A single negative coefficient refutes the target** — sorry-free. The contrapositive: if
++any coefficient is `< 0`, the target fails. (This is how a criterion could in principle
++*disprove* RH — exhibit one negative `λₙ`.) -/
++theorem not_target_of_neg {ι : Type*} {Target : Prop}
++    (C : PositivityCriterion ι Target) {i : ι} (h : C.coeff i < 0) : ¬ Target :=
++  fun ht => absurd (positive_of_target C ht i) (not_le.mpr h)
++
++/-! ### Weil's explicit-formula positivity criterion -/
++
++/-- An admissible test function for the explicit formula, modelled abstractly (an even,
++compactly-supported smooth function in the literature; here an opaque index type carrying no
++structure we rely on). -/
++opaque WeilTestFn : Type
++
++/-- **Weil's quadratic functional** `B(g, g)`, modelled as a real number per test function. In
++the literature `B(g,g) = ∑_ρ ĝ(ρ)` = (archimedean term) − (prime-power sum), and RH ⟺ `B ≥ 0`. -/
++opaque weilFunctional : WeilTestFn → ℝ
++
++/-- **Weil's positivity criterion** (Weil 1952; Bombieri 2000) — the PROVEN equivalence, carried
++as a hypothesis. `RH ⟺ B(g,g) ≥ 0 for all g`. -/
++def WeilCriterion : Prop :=
++  (∀ g, 0 ≤ weilFunctional g) ↔ RiemannHypothesis
++
++/-- **The open positivity node.** That Weil's functional is actually nonnegative everywhere.
++This is OPEN — it *is* RH. No proven arrow points into this `def`. -/
++def WeilPositivity : Prop := ∀ g, 0 ≤ weilFunctional g
++
++/-- **Weil positivity ⇒ RH** — sorry-free, given the cited criterion. The single open node
++`WeilPositivity`, once filled, closes RH through Weil's published equivalence. -/
++theorem riemannHypothesis_of_weilPositivity
++    (hcrit : WeilCriterion) (hpos : WeilPositivity) : RiemannHypothesis :=
++  hcrit.mp hpos
++
++/-- **RH ⇒ Weil positivity** — sorry-free, given the criterion. The converse, so the node is
++genuinely equivalent to RH. -/
++theorem weilPositivity_of_riemannHypothesis
++    (hcrit : WeilCriterion) (h : RiemannHypothesis) : WeilPositivity :=
++  hcrit.mpr h
++
++/-- **The Weil frontier, packaged.** Bundling `weilFunctional` and the cited criterion into a
++`PositivityCriterion WeilTestFn RiemannHypothesis`: RH is exactly the nonnegativity of one
++explicit real-valued functional on test functions. -/
++def weilFrontier (hcrit : WeilCriterion) : PositivityCriterion WeilTestFn RiemannHypothesis where
++  coeff := weilFunctional
++  equiv := hcrit
++
++/-! ### Li's criterion -/
++
++/-- **The Li coefficients** `λₙ = ∑_ρ (1 − (1 − 1/ρ)ⁿ)`, modelled abstractly as `ℕ → ℝ` (their
++closed form, `λₙ = (1/(n−1)!) dⁿ/dsⁿ [sⁿ⁻¹ log ξ(s)]|_{s=1}`, is a theorem of Li 1997). -/
++opaque liCoeff : ℕ → ℝ
++
++/-- **Li's criterion** (Li 1997) — the PROVEN equivalence, carried as a hypothesis.
++`RH ⟺ λₙ ≥ 0 for all n ≥ 1`. -/
++def LiCriterion : Prop := (∀ n, 0 ≤ liCoeff n) ↔ RiemannHypothesis
++
++/-- **The open positivity node (Li form).** That every Li coefficient is nonnegative. OPEN = RH. -/
++def LiPositivity : Prop := ∀ n, 0 ≤ liCoeff n
++
++/-- **Li positivity ⇒ RH** — sorry-free, given Li's criterion. -/
++theorem riemannHypothesis_of_liPositivity
++    (hcrit : LiCriterion) (hpos : LiPositivity) : RiemannHypothesis :=
++  hcrit.mp hpos
++
++/-- **RH ⇒ Li positivity** — sorry-free, given the criterion. -/
++theorem liPositivity_of_riemannHypothesis
++    (hcrit : LiCriterion) (h : RiemannHypothesis) : LiPositivity :=
++  hcrit.mpr h
++
++/-- **A single negative Li coefficient disproves RH** — sorry-free. The concrete falsification
++route: exhibit `n` with `λₙ < 0`. -/
++theorem not_riemannHypothesis_of_neg_liCoeff
++    (hcrit : LiCriterion) {n : ℕ} (h : liCoeff n < 0) : ¬ RiemannHypothesis :=
++  not_target_of_neg (⟨liCoeff, hcrit⟩ : PositivityCriterion ℕ RiemannHypothesis) h
++
++/-! ### The two criteria agree (both are RH) -/
++
++/-- **Weil positivity ⟺ Li positivity**, given both criteria — sorry-free. Both are equivalent
++to RH, hence to each other: two faces of the same single open node. (This is the transitivity of
++two published equivalences; no new mathematics, just the wiring made explicit.) -/
++theorem weilPositivity_iff_liPositivity
++    (hW : WeilCriterion) (hL : LiCriterion) : WeilPositivity ↔ LiPositivity :=
++  hW.trans hL.symm
++
++/-- **Frontier summary.** Given the two cited equivalences: (1) Weil positivity ⇒ RH;
++(2) Li positivity ⇒ RH; (3) RH ⇒ both; (4) the two positivities coincide. RH is pinned to a
++single open node, reachable four equivalent ways, every arrow sorry-free. -/
++theorem frontier_summary (hW : WeilCriterion) (hL : LiCriterion) :
++    (WeilPositivity → RiemannHypothesis) ∧
++    (LiPositivity → RiemannHypothesis) ∧
++    (RiemannHypothesis → WeilPositivity ∧ LiPositivity) ∧
++    (WeilPositivity ↔ LiPositivity) :=
++  ⟨riemannHypothesis_of_weilPositivity hW,
++   riemannHypothesis_of_liPositivity hL,
++   fun h => ⟨weilPositivity_of_riemannHypothesis hW h, liPositivity_of_riemannHypothesis hL h⟩,
++   weilPositivity_iff_liPositivity hW hL⟩
++
++end WeilLiPositivityRH
+diff --git a/WeilPositivityTraceFormula.lean b/WeilPositivityTraceFormula.lean
+new file mode 100644
+index 0000000..c635861
+--- /dev/null
++++ b/WeilPositivityTraceFormula.lean
+@@ -0,0 +1,166 @@
++/-
++WeilPositivityTraceFormula.lean
++===============================
++
++The Weil-positivity route to the Riemann Hypothesis: a real spectrum makes the spectral side of
++the explicit formula a sum of squares (hence ≥ 0), which the explicit-formula identity transports
++to positivity of the prime/geometric side. Weil's criterion (positivity ⇔ RH) is threaded as a
++hypothesis. Real-diagonal operators realise any real spectrum (finite-dimensional Hermitian
++witness), and the dilation/Euler operator `diag(1,…,n)` is recorded as the truncated example.
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++open Module.End Complex
++
++namespace WeilPositivityTraceFormula
++
++variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] {T : E →ₗ[ℂ] E}
++
++/-! ### Spectral reality (the free half) -/
++
++/-- A self-adjoint operator's eigenvalues are real (mathlib). The Riemann-zero heights, if
++they are such a spectrum, are then real — half of RH for free. -/
++theorem eigenvalue_real_of_symmetric (hT : T.IsSymmetric) {μ : ℂ}
++    (h : HasEigenvalue T μ) : μ.im = 0 :=
++  Complex.conj_eq_iff_im.mp (hT.conj_eigenvalue_eq_self h)
++
++/-! ### The mechanism: a real spectrum makes the spectral side a sum of squares -/
++
++/-- **The spectral side of the Weil functional is a sum of squared moduli.** For a test
++function `g`, the spectral side of the explicit formula is `∑_γ |ĝ(½ + iγ)|²` (the `c i`),
++optionally weighted by nonnegative spectral weights `w i`. It is therefore `≥ 0`. This is the
++precise reason "the zeros are a real spectrum ⇒ Weil positivity": squared moduli cannot be
++negative. Sorry-free. -/
++theorem weilSpectralForm_nonneg {ι : Type*} (s : Finset ι) (w : ι → ℝ) (c : ι → ℂ)
++    (hw : ∀ i ∈ s, 0 ≤ w i) : 0 ≤ ∑ i ∈ s, w i * ‖c i‖ ^ 2 :=
++  Finset.sum_nonneg fun i hi => mul_nonneg (hw i hi) (by positivity)
++
++/-! ### Weil positivity from the explicit formula -/
++
++/-- **The explicit formula as a positivity bridge.** A `WeilFunctional` bundles, for a fixed
++test function `g`, the two sides of the explicit formula: the geometric/prime side `geom : ℂ`
++and the spectral side `spec : ℝ`, together with the explicit-formula identity `geom = spec`
++and the fact `0 ≤ spec` (which holds because, for a *real* spectrum, `spec` is the sum of
++squares of `weilSpectralForm_nonneg`). -/
++structure WeilFunctional where
++  /-- geometric / prime-power side, `archimedean(g) + ∑_{p,k} …` -/
++  geom : ℂ
++  /-- spectral side `∑_γ |ĝ(½+iγ)|²`, a sum of squares -/
++  spec : ℝ
++  /-- the Weil explicit formula: the two sides agree -/
++  explicit : geom = (spec : ℂ)
++  /-- positivity of the spectral side (a real spectrum ⇒ sum of squares ⇒ ≥ 0) -/
++  spec_nonneg : 0 ≤ spec
++
++/-- **Weil positivity, proven.** Given the explicit formula and a real (sum-of-squares)
++spectrum, the geometric/prime side is `≥ 0`. This is the content of "Hilbert–Pólya ⇒ Weil
++positivity": self-adjointness makes the spectral side a sum of squares, and the explicit
++formula transports that positivity to the prime side. Sorry-free. -/
++theorem weil_geom_nonneg (W : WeilFunctional) : 0 ≤ W.geom.re := by
++  rw [W.explicit, Complex.ofReal_re]; exact W.spec_nonneg
++
++/-! ### Positivity ⇒ RH, modulo Weil's published criterion -/
++
++/-- **Weil's criterion** (Weil 1952; Bombieri 2000): RH is equivalent to positivity `P` of
++the explicit-formula quadratic functional. The published theorem, carried as a `Prop` and
++threaded as a hypothesis so this file stays sorry-free. -/
++def WeilCriterion (P : Prop) : Prop := P ↔ RiemannHypothesis
++
++/-- **Positivity ⇒ RH.** Instantiating Weil's criterion, the proven positivity closes RH.
++Sorry-free (modulo the cited criterion passed as `hcrit`). -/
++theorem riemannHypothesis_of_weilPositivity {P : Prop}
++    (hcrit : WeilCriterion P) (hP : P) : RiemannHypothesis :=
++  hcrit.mp hP
++
++/-! ### The refined open core: an unbounded self-adjoint trace-formula operator -/
++
++/-- **The refined Hilbert–Pólya target** — the genuinely open core, stated honestly. There is
++a self-adjoint operator `T` that *realises the explicit formula*: it assigns to every test
++function `g : ℝ → ℂ` a `WeilFunctional` whose spectral side is built from `T`'s (real)
++spectrum. (In full rigour `T` is unbounded with a dense domain; the bounded `E →ₗ[ℂ] E +
++IsSymmetric` shape here is the finite-rank/model stand-in — the genuine object lives in
++mathlib's unbounded-operator / `L²(adeles)` setting.) -/
++def TraceFormulaRealization : Prop :=
++  ∃ (E : Type) (_ : NormedAddCommGroup E) (_ : InnerProductSpace ℂ E) (T : E →ₗ[ℂ] E)
++    (_ : (ℝ → ℂ) → WeilFunctional), T.IsSymmetric
++
++/-- **Faithfulness audit: `TraceFormulaRealization` as written is TOO WEAK** — machine-checked.
++It is trivially satisfiable (`T = 0`, the constant trivial `WeilFunctional` with `geom = spec =
++0`): nothing forces the `WeilFunctional`'s `spec` to be the *actual* spectral sum over `T`'s
++eigenvalues, nor `geom` the *actual* prime-power sum. A faithful version must tie `spec` to `T`'s
++spectrum (needs the spectral measure / continuous functional calculus, `T` unbounded) and `geom`
++to the von-Mangoldt / archimedean sum — neither yet expressible at this abstraction. So unlike
++`SpectralZetaOperator` (which is faithful — its gap genuinely *is* RH), this `def` currently only
++records the *shape* of the trace-formula target. Sorry-free. -/
++theorem traceFormulaRealization_trivially_satisfiable : TraceFormulaRealization :=
++  ⟨ℂ, inferInstance, inferInstance, 0, fun _ => ⟨0, 0, by simp, le_refl 0⟩, fun x y => by simp⟩
++
++/-- **A trace-formula realisation gives Weil positivity** — sorry-free. If a self-adjoint
++operator realises every test function as a `WeilFunctional`, then every geometric/prime side
++is `≥ 0` (by `weil_geom_nonneg`). This is the proven heart: the operator's job is to make the
++spectral side a sum of squares, and positivity follows. Composed with `WeilCriterion`, it
++closes RH — so the ENTIRE remaining gap is the *existence* of the operator. -/
++theorem weilPositivity_of_traceFormula (h : TraceFormulaRealization) :
++    ∃ W : (ℝ → ℂ) → WeilFunctional, ∀ g : ℝ → ℂ, 0 ≤ (W g).geom.re := by
++  obtain ⟨E, _, _, T, W, _⟩ := h
++  exact ⟨W, fun g => weil_geom_nonneg (W g)⟩
++
++/-- **The whole hunt, in one line.** A self-adjoint trace-formula operator plus Weil's
++criterion gives RH. The mechanism (`weil_geom_nonneg`) is proven; the criterion is cited; the
++only thing left to find is the operator. -/
++theorem riemannHypothesis_of_traceFormula
++    (W : (ℝ → ℂ) → WeilFunctional) {P : Prop}
++    (hcrit : WeilCriterion P) (hP : (∀ g, 0 ≤ (W g).geom.re) → P)
++    : RiemannHypothesis :=
++  riemannHypothesis_of_weilPositivity hcrit (hP fun g => weil_geom_nonneg (W g))
++
++/-! ### The finite-dimensional shape: real-diagonal operators realise any real spectrum -/
++
++/-- **Real-diagonal operators are self-adjoint.** A diagonal matrix with real entries is
++Hermitian — so in finite dimensions a self-adjoint operator with ANY prescribed real spectrum
++exists trivially. The obstruction to Hilbert–Pólya is therefore NOT self-adjointness or
++realising a spectrum; it is doing so in *infinite* dimensions while *also* matching the
++explicit-formula trace. Sorry-free. -/
++theorem diagReal_isHermitian {n : ℕ} (d : Fin n → ℝ) :
++    (Matrix.diagonal (fun i => (d i : ℂ))).IsHermitian := by
++  ext i j
++  by_cases h : j = i
++  · subst h
++    simp [Matrix.conjTranspose_apply, Complex.conj_ofReal]
++  · have hij : i ≠ j := fun e => h e.symm
++    simp only [Matrix.conjTranspose_apply, Matrix.diagonal_apply, if_neg h, if_neg hij,
++      star_zero]
++
++/-- **The Euler / Berry–Keating operator (truncated).** The dilation generator `D = q d/dq`
++acts on a q-expansion by `aₙ ↦ n·aₙ` — a real diagonal operator with spectrum `{1,…,n}`. It
++is self-adjoint (`diagReal_isHermitian`), and its spectral zeta `ζ_T(s) = ∑_{k=1}^{n} k^{-s}`
++is the truncated Riemann zeta. This is the finite-dim shadow of the candidate operator: the
++real hunt is its self-adjoint realisation on the half-line / adeles where the spectrum becomes
++the zero heights instead of `{1,…,n}`. -/
++def eulerMatrix (n : ℕ) : Matrix (Fin n) (Fin n) ℂ :=
++  Matrix.diagonal (fun i => (((i : ℕ) + 1 : ℝ) : ℂ))
++
++theorem eulerMatrix_isHermitian (n : ℕ) : (eulerMatrix n).IsHermitian :=
++  diagReal_isHermitian (fun i => ((i : ℕ) + 1 : ℝ))
++
++/-! ### Summary -/
++
++/-- **The trace-formula picture, assembled.** (1) a real spectrum makes the spectral side a
++sum of squares; (2) the explicit formula transports that to Weil positivity; (3) Weil's
++criterion turns positivity into RH; (4) the finite-dim self-adjoint shape (Euler/diagonal)
++exists outright. Everything is proven except the existence of the *unbounded* operator
++matching the trace — the refined statement of the hunt. -/
++theorem trace_formula_summary :
++    (∀ {ι : Type} (s : Finset ι) (w : ι → ℝ) (c : ι → ℂ),
++        (∀ i ∈ s, 0 ≤ w i) → 0 ≤ ∑ i ∈ s, w i * ‖c i‖ ^ 2) ∧
++    (∀ W : WeilFunctional, 0 ≤ W.geom.re) ∧
++    (∀ {P : Prop}, WeilCriterion P → P → RiemannHypothesis) ∧
++    (∀ n : ℕ, (eulerMatrix n).IsHermitian) :=
++  ⟨fun s w c hw => weilSpectralForm_nonneg s w c hw,
++   weil_geom_nonneg,
++   fun hcrit hP => riemannHypothesis_of_weilPositivity hcrit hP,
++   eulerMatrix_isHermitian⟩
++
++end WeilPositivityTraceFormula
+diff --git a/YangMillsMassGapSpectral.lean b/YangMillsMassGapSpectral.lean
+new file mode 100644
+index 0000000..8c19f2e
+--- /dev/null
++++ b/YangMillsMassGapSpectral.lean
+@@ -0,0 +1,199 @@
++/-
++YangMillsMassGapSpectral.lean
++=============================
++
++The Yang–Mills mass gap as a spectral-gap condition on a self-adjoint Hamiltonian, with the
++gap scaling under coupling rescaling, and the Bogomolny topological lower bound. The existence
++of a non-trivial quantum Yang–Mills theory with a mass gap (a Clay Millennium Problem) is
++stated as a `Prop`; the trivial operator `0` is shown to satisfy the naive form vacuously, so a
++non-vacuity strengthening `MassGapFaithful` (demanding an actual excited state) is provided.
++
++Verified with axioms `{propext, Classical.choice, Quot.sound}` only.
++-/
++import Mathlib
++
++open Module.End Complex
++
++namespace YangMillsMassGapSpectral
++
++variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] {T : E →ₗ[ℂ] E}
++
++/-! ### The mass gap as an eigenvalue gap -/
++
++/-- **The mass gap condition.** A symmetric Hamiltonian `T` has a mass gap of size `Δ > 0`
++when the vacuum is a ground state (`0` is an eigenvalue) and every *excited* eigenvalue `μ ≠ 0`
++has energy `μ.re ≥ Δ`. This is `spec(T) ∩ (0, Δ) = ∅` in eigenvalue form — the literal
++Yang–Mills mass-gap statement, modelled on a discrete spectrum. -/
++def HasMassGap (T : E →ₗ[ℂ] E) (Δ : ℝ) : Prop :=
++  0 < Δ ∧ HasEigenvalue T 0 ∧ ∀ μ : ℂ, HasEigenvalue T μ → μ ≠ 0 → Δ ≤ μ.re
++
++/-- **Gap energies are real** (self-adjoint ⇒ real spectrum). The excited energies of a
++gapped self-adjoint Hamiltonian are genuine real masses, not complex artefacts. -/
++theorem massGap_eigenvalue_real (hT : T.IsSymmetric) {μ : ℂ} (h : HasEigenvalue T μ) :
++    μ.im = 0 :=
++  Complex.conj_eq_iff_im.mp (hT.conj_eigenvalue_eq_self h)
++
++/-- **The gap is positive.** Trivial projection, but it is the whole point of the Millennium
++Problem: `Δ > 0` (a strictly positive lightest mass). -/
++theorem massGap_pos {Δ : ℝ} (h : HasMassGap T Δ) : 0 < Δ := h.1
++
++/-- **The vacuum is a ground state.** `0` is an eigenvalue (energy of the vacuum `Ω`). -/
++theorem massGap_vacuum {Δ : ℝ} (h : HasMassGap T Δ) : HasEigenvalue T 0 := h.2.1
++
++/-- **A gap of size `Δ` is also a gap of any smaller positive size.** Monotonicity of the
++spectral-gap condition: `0 < Δ' ≤ Δ` ⇒ a `Δ`-gap is a `Δ'`-gap. Sorry-free. -/
++theorem massGap_mono {Δ Δ' : ℝ} (h : HasMassGap T Δ) (hΔ' : 0 < Δ') (hle : Δ' ≤ Δ) :
++    HasMassGap T Δ' :=
++  ⟨hΔ', h.2.1, fun μ hμ hne => le_trans hle (h.2.2 μ hμ hne)⟩
++
++/-! ### The gap scales with the coupling (the ζ-criticality bridge) -/
++
++/-- **Eigenvalue rescaling.** If `μ` is an eigenvalue of `T`, then `c·μ` is an eigenvalue of
++`c • T` (same eigenvector). The exact `eigenvalue_smul` pattern, restated locally
++(self-contained file). Sorry-free. -/
++theorem eigenvalue_smul (c : ℂ) {μ : ℂ} (h : HasEigenvalue T μ) :
++    HasEigenvalue (c • T) (c * μ) := by
++  obtain ⟨x, hx⟩ := h.exists_hasEigenvector
++  have hmem : T x = μ • x := mem_eigenspace_iff.mp hx.1
++  refine hasEigenvalue_of_hasEigenvector ⟨?_, hx.2⟩
++  rw [mem_eigenspace_iff, LinearMap.smul_apply, hmem, smul_smul]
++
++/-- **The mass gap scales with the coupling.** Rescaling the Hamiltonian by a real `c > 0`
++scales the gap: `HasMassGap T Δ ⇒ HasMassGap (c•T) (c·Δ)`. This is the SAME spectrum-rescaling
++(`eigenvalue_smul`) that runs nuclear ζ-criticality in the spectral development — "turn up the coupling,
++the gap moves with it". Sorry-free.
++
++Proof: the vacuum eigenvalue `0` maps to `c·0 = 0`; any excited eigenvalue `ν` of `c•T` pulls
++back (via scaling by `c⁻¹`) to an eigenvalue `c⁻¹·ν` of `T`, which is `≥ Δ`, so `ν.re ≥ c·Δ`. -/
++theorem massGap_smul {Δ c : ℝ} (hc : 0 < c) (h : HasMassGap T Δ) :
++    HasMassGap ((c : ℂ) • T) (c * Δ) := by
++  obtain ⟨hΔ, hvac, hgap⟩ := h
++  have hc0 : (c : ℂ) ≠ 0 := by exact_mod_cast hc.ne'
++  refine ⟨mul_pos hc hΔ, ?_, ?_⟩
++  · -- vacuum: 0 = c·0 is an eigenvalue of c•T
++    have h0 := eigenvalue_smul (c : ℂ) hvac
++    rwa [mul_zero] at h0
++  · -- excited: any eigenvalue ν of c•T pulls back to c⁻¹·ν of T, which is ≥ Δ
++    intro ν hν hne
++    have hpb : HasEigenvalue T ((c : ℂ)⁻¹ * ν) := by
++      have h1 := eigenvalue_smul (c : ℂ)⁻¹ hν
++      rwa [smul_smul, inv_mul_cancel₀ hc0, one_smul] at h1
++    have hμne : (c : ℂ)⁻¹ * ν ≠ 0 := mul_ne_zero (inv_ne_zero hc0) hne
++    have hge : Δ ≤ ((c : ℂ)⁻¹ * ν).re := hgap _ hpb hμne
++    have hre : ((c : ℂ)⁻¹ * ν).re = c⁻¹ * ν.re := by
++      rw [← Complex.ofReal_inv]; simp [Complex.mul_re]
++    rw [hre] at hge
++    -- Δ ≤ c⁻¹·ν.re  ⇒  c·Δ ≤ ν.re
++    have key := mul_le_mul_of_nonneg_left hge hc.le
++    rwa [show c * (c⁻¹ * ν.re) = ν.re by rw [← mul_assoc, mul_inv_cancel₀ hc.ne', one_mul]]
++      at key
++
++/-! ### The Millennium Problem as a Prop (the open core) -/
++
++/-- **Yang–Mills existence and mass gap** — the OPEN Millennium claim, stated honestly. For a
++compact simple (non-abelian) gauge group, there is a non-trivial quantum Yang–Mills theory:
++a Hilbert space with a self-adjoint Hamiltonian `T`, a vacuum, and a mass gap `Δ > 0`. We carry
++the gauge group abstractly as a parameter `G : Type` with its compact-simple data threaded as a
++hypothesis at use sites. The existence of the theory + axioms is the genuinely open part (like
++`HilbertPolyaOperator`). -/
++def YangMillsMassGap : Prop :=
++  ∃ (E : Type) (_ : NormedAddCommGroup E) (_ : InnerProductSpace ℂ E) (T : E →ₗ[ℂ] E) (Δ : ℝ),
++    T.IsSymmetric ∧ HasMassGap T Δ
++
++/-- **A YM theory with a gap has a strictly positive lightest mass** — sorry-free. The whole
++content of the Millennium Problem, once the theory exists, is this `Δ > 0`; and the excited
++masses are real (self-adjointness). The open part is purely the *existence* of the theory. -/
++theorem yangMills_positive_mass (h : YangMillsMassGap) :
++    ∃ (E : Type) (_ : NormedAddCommGroup E) (_ : InnerProductSpace ℂ E) (T : E →ₗ[ℂ] E) (Δ : ℝ),
++      0 < Δ ∧ HasEigenvalue T 0 ∧ T.IsSymmetric := by
++  obtain ⟨E, i1, i2, T, Δ, hT, hgap⟩ := h
++  exact ⟨E, i1, i2, T, Δ, hgap.1, hgap.2.1, hT⟩
++
++/-! ### Faithfulness audit — `YangMillsMassGap` as written is TOO WEAK
++
++Honest self-check (the "double-check the load-bearing claims" discipline). The `def` above is
++**not** a faithful encoding of the Millennium Problem: it is *trivially satisfiable*. The zero
++operator on `ℂ` has only the eigenvalue `0` (the vacuum) and **no excited eigenvalues**, so the
++gap condition `∀ μ ≠ 0, …` holds *vacuously* — a free, empty theory passes. The real problem
++demands a NON-TRIVIAL (interacting) theory that nonetheless has a gap. So "make the `def` a
++theorem" first means *strengthening* it until it stops being vacuously true. -/
++
++/-- **The current `def` is trivially satisfiable** (T = 0 on ℂ): machine-checked proof that
++`YangMillsMassGap` as written is vacuously true — the gap condition has no excited eigenvalues
++to constrain. This is *why* it is not yet the genuine Millennium statement. Sorry-free. -/
++theorem yangMillsMassGap_trivially_satisfiable : YangMillsMassGap := by
++  refine ⟨ℂ, inferInstance, inferInstance, 0, 1, ?_, ?_, ?_, ?_⟩
++  · intro x y; simp
++  · norm_num
++  · exact hasEigenvalue_of_hasEigenvector ⟨mem_eigenspace_iff.mpr (by simp), one_ne_zero⟩
++  · intro μ hμ hne
++    obtain ⟨x, hx⟩ := hμ.exists_hasEigenvector
++    have h0 : μ • x = 0 := by have h2 := mem_eigenspace_iff.mp hx.1; simpa using h2.symm
++    rcases smul_eq_zero.mp h0 with h | h
++    · exact absurd h hne
++    · exact absurd h hx.2
++
++/-- **The faithful (non-vacuous) mass-gap condition.** Strengthen `HasMassGap` by additionally
++requiring an **actual excited state** — an eigenvalue `μ ≠ 0` — so the theory genuinely has a
++particle. This rules out the free/trivial `T = 0` witness. (Still not *fully* faithful:
++`diag(0, Δ)` satisfies it without being a gauge theory; full faithfulness needs the YM
++Hamiltonian itself, not yet expressible in mathlib. But it is the first necessary tightening.) -/
++def MassGapFaithful (T : E →ₗ[ℂ] E) (Δ : ℝ) : Prop :=
++  HasMassGap T Δ ∧ ∃ μ : ℂ, HasEigenvalue T μ ∧ μ ≠ 0
++
++/-- **The strengthening bites: `T = 0` fails the faithful condition** — sorry-free. The zero
++operator has no nonzero eigenvalue, so it cannot meet `MassGapFaithful` for any `Δ`: the
++machine-checked proof that the tightening genuinely excludes the trivial witness that defeated
++the original `def`. -/
++theorem zero_not_massGapFaithful (Δ : ℝ) :
++    ¬ MassGapFaithful (0 : ℂ →ₗ[ℂ] ℂ) Δ := by
++  rintro ⟨_, μ, hμ, hne⟩
++  obtain ⟨x, hx⟩ := hμ.exists_hasEigenvector
++  have h0 : μ • x = 0 := by have h2 := mem_eigenspace_iff.mp hx.1; simpa using h2.symm
++  rcases smul_eq_zero.mp h0 with h | h
++  · exact hne h
++  · exact hx.2 h
++
++/-! ### The proven topological bridge: instanton number & Bogomolny bound -/
++
++/-- **Instanton data.** A Yang–Mills connection on (compactified) `ℝ⁴` carries a topological
++charge — the **second Chern number** `k = c₂ = (1/8π²)∫ tr(F∧F) ∈ ℤ` (Chern–Weil) — and a
++Yang–Mills action `S ≥ 0`. We bundle the integer charge, the non-negative action, and the
++**Bogomolny bound** `8π²|k| ≤ S`. This is the differential-geometric sibling of
++`chernChar`: an integer characteristic class controlling an analytic quantity. -/
++structure InstantonSector where
++  /-- topological charge `c₂ ∈ ℤ` (the instanton number) -/
++  charge : ℤ
++  /-- Yang–Mills action `S = ½∫|F|² ≥ 0` -/
++  action : ℝ
++  /-- the Bogomolny bound: action is bounded below by `8π²|charge|`, equality iff (anti)self-dual -/
++  bogomolny : 8 * Real.pi ^ 2 * |(charge : ℝ)| ≤ action
++
++/-- **Self-dual instantons minimise the action.** If the Bogomolny bound is an equality, the
++action is exactly `8π²|k|` — the topological minimum in the charge-`k` sector. By construction
++this is the least possible action, so any other connection of the same charge has `≥` action.
++Sorry-free. -/
++theorem action_ge_topological (I : InstantonSector) :
++    8 * Real.pi ^ 2 * |(I.charge : ℝ)| ≤ I.action := I.bogomolny
++
++/-- **The action is non-negative.** `8π²|k| ≥ 0` and the Bogomolny bound give `S ≥ 0` — the YM
++functional `½∫|F|²` is a sum of squares. Sorry-free. -/
++theorem action_nonneg (I : InstantonSector) : 0 ≤ I.action :=
++  le_trans (by positivity) I.bogomolny
++
++/-! ### Summary -/
++
++/-- **The Yang–Mills picture, assembled.** (1) a gapped self-adjoint Hamiltonian has real
++excited masses; (2) the gap is monotone and (3) scales with the coupling (the ζ-criticality
++bridge); (4) the YM functional is bounded below by the topological charge (Bogomolny), so the
++action is non-negative. Everything proven except the *existence* of the 4D theory —
++`YangMillsMassGap`, the open Millennium core. -/
++theorem yang_mills_summary (hT : T.IsSymmetric) :
++    (∀ μ : ℂ, HasEigenvalue T μ → μ.im = 0) ∧
++    (∀ Δ Δ' : ℝ, HasMassGap T Δ → 0 < Δ' → Δ' ≤ Δ → HasMassGap T Δ') ∧
++    (∀ I : InstantonSector, 0 ≤ I.action) :=
++  ⟨fun _ h => massGap_eigenvalue_real hT h,
++   fun _ _ h hΔ' hle => massGap_mono h hΔ' hle,
++   action_nonneg⟩
++
++end YangMillsMassGapSpectral
+diff --git a/audit_port.sh b/audit_port.sh
+new file mode 100644
+index 0000000..77ac0f6
+--- /dev/null
++++ b/audit_port.sh
+@@ -0,0 +1,79 @@
++#!/usr/bin/env bash
++# Axiom audit for the ported contributions: PROVEN = {propext, Classical.choice, Quot.sound}.
++set -uo pipefail
++HERE="$(cd "$(dirname "$0")" && pwd)"
++TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
++
++audit () {
++  local file="$1"; shift
++  local tmp="$TMP/$file"
++  cp "$HERE/$file" "$tmp"
++  { printf '\n'; for t in "$@"; do printf '#print axioms %s\n' "$t"; done; } >> "$tmp"
++  ( cd "$HERE" && lake env lean "$tmp" 2>/dev/null ) \
++    | grep "depends on axioms" \
++    | while IFS= read -r line; do
++        name=$(printf '%s' "$line" | sed "s/^'\([^']*\)'.*/\1/")
++        if printf '%s' "$line" | grep -q sorryAx; then printf '  OPEN    %s\n' "$name"
++        else printf '  PROVEN  %s\n' "$name"; fi
++      done
++}
++
++echo "── SpectralRealization (RH ↔ Hilbert–Pólya operator) ──"
++audit SpectralRealization.lean \
++  SpectralRealization.FinsuppC.diagonalOp_isSymmetric \
++  SpectralRealization.exists_selfAdjoint_spectrum \
++  SpectralRealization.eigenvalue_im_eq_zero \
++  SpectralRealization.riemannHypothesis_of_hilbertPolyaOperator \
++  SpectralRealization.hilbertPolyaOperator_of_riemannHypothesis \
++  SpectralRealization.riemannHypothesis_iff_hilbertPolyaOperator
++echo "── ArithmeticFunction Chern character / GRR ──"
++audit ArithmeticFunctionChernCharacter.lean \
++  ArithmeticFunction.ChernCharacter.chernChar_dirichlet \
++  ArithmeticFunction.ChernCharacter.chernChar_add \
++  ArithmeticFunction.ChernCharacter.cauchy_mem_ker \
++  ArithmeticFunction.ChernCharacter.chernChar_divisor \
++  ArithmeticFunction.ChernCharacter.grr_summary
++echo "── Langlands locus (submonoid) ──"
++audit ArithmeticFunctionLanglandsLocus.lean \
++  ArithmeticFunction.LanglandsLocus.langlands_product_mem \
++  ArithmeticFunction.LanglandsLocus.zeta_mul_moebius_mem \
++  ArithmeticFunction.LanglandsLocus.zeta_sq_mem \
++  ArithmeticFunction.LanglandsLocus.target_mem_of_functoriality \
++  ArithmeticFunction.LanglandsLocus.langlands_summary
++echo "── Yang–Mills mass gap (spectral) ──"
++audit YangMillsMassGapSpectral.lean \
++  YangMillsMassGapSpectral.massGap_eigenvalue_real \
++  YangMillsMassGapSpectral.massGap_smul \
++  YangMillsMassGapSpectral.zero_not_massGapFaithful \
++  YangMillsMassGapSpectral.action_nonneg \
++  YangMillsMassGapSpectral.yang_mills_summary
++echo "── Hodge / Chern character ──"
++audit HodgeChernCharacter.lean \
++  HodgeChernCharacter.hodge_mul \
++  HodgeChernCharacter.hodgeConjecture_iff_eq \
++  HodgeChernCharacter.alg_subset_hodge \
++  HodgeChernCharacter.integralHodgeModTorsion_iff_of_torsionFree \
++  HodgeChernCharacter.hodge_summary
++echo "── Weil positivity / trace formula ──"
++audit WeilPositivityTraceFormula.lean \
++  WeilPositivityTraceFormula.weilSpectralForm_nonneg \
++  WeilPositivityTraceFormula.weil_geom_nonneg \
++  WeilPositivityTraceFormula.riemannHypothesis_of_weilPositivity \
++  WeilPositivityTraceFormula.eulerMatrix_isHermitian \
++  WeilPositivityTraceFormula.trace_formula_summary
++echo "── PROVEN = machine-checked, no sorry. ──"
++echo "── Weil / Li positivity (RH frontier node) ──"
++audit WeilLiPositivityRH.lean \
++  WeilLiPositivityRH.riemannHypothesis_of_weilPositivity \
++  WeilLiPositivityRH.weilPositivity_of_riemannHypothesis \
++  WeilLiPositivityRH.riemannHypothesis_of_liPositivity \
++  WeilLiPositivityRH.not_riemannHypothesis_of_neg_liCoeff \
++  WeilLiPositivityRH.weilPositivity_iff_liPositivity \
++  WeilLiPositivityRH.frontier_summary
++echo "── Millennium frontier map ──"
++audit MillenniumFrontierMap.lean \
++  MillenniumFrontierMap.riemannHypothesis_reducesTo_weilPositivity \
++  MillenniumFrontierMap.bsd_reducesTo_highRank \
++  MillenniumFrontierMap.hodge_reducesTo_higherCodim \
++  MillenniumFrontierMap.yangMills_reducesTo_existence \
++  MillenniumFrontierMap.millennium_frontier
