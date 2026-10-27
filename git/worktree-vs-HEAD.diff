@@ -1,0 +1,314 @@
+diff --git a/HSLNAlgebra.lean b/HSLNAlgebra.lean
+index 988073f..da445d5 100644
+--- a/HSLNAlgebra.lean
++++ b/HSLNAlgebra.lean
+@@ -2,7 +2,7 @@
+ The DNA algebra: composition IS the Dirichlet ring of arithmetic functions — machine-checked.
+ =============================================================================================
+ 
+-Richard's question: "we have all the operations right? we could derive some kind of group."
++User's question: "we have all the operations right? we could derive some kind of group."
+ Here is that question made precise and verified against mathlib.
+ 
+ A "DNA" is an arithmetic function  f : ℕ → R  (the Dirichlet / q-expansion coefficients we
+diff --git a/HSLNComplexity.lean b/HSLNComplexity.lean
+index 0c34e7e..9d2f4e6 100644
+--- a/HSLNComplexity.lean
++++ b/HSLNComplexity.lean
+@@ -13,7 +13,7 @@ definitions abstractly: a decision problem is a predicate on inputs; "poly-time
+ the definitions require. Everything that is *claimed* (P ⊆ NP; the asymmetry ⇒ separation) is
+ proven sorry-free; the genuinely open content (`PNeqNP`) is one `def` with no incoming proof.
+ 
+-The HSLN angle (the combinatorial content Richard is after). Our factoring work
++The HSLN angle (the combinatorial content [REDACTED NAME] is after). Our factoring work
+ (`viz/hsln_two_rings.py`) established: the composition map `(p, q) ↦ p·q` — a single convolution
+ in the Cauchy/Dirichlet ring — is cheap (forward = poly-time, "P-like"), but its inverse
+ (recover `p, q` from `N`) is the factoring wall (search = "NP-like"). This is the *general*
+diff --git a/HSLNFactor.lean b/HSLNFactor.lean
+index ff471e2..035096c 100644
+--- a/HSLNFactor.lean
++++ b/HSLNFactor.lean
+@@ -2,7 +2,7 @@
+ The factoring conjecture, machine-checked.
+ ==========================================
+ 
+-Richard's conjecture (geometric form): take `N = p·q`, drive a "gravity DNA" to pull a
++[REDACTED NAME]'s conjecture (geometric form): take `N = p·q`, drive a "gravity DNA" to pull a
+ marker onto `N`; the bent path through the lattice crosses exactly the points that are the
+ prime factors, and the projection reveals them.
+ 
+diff --git a/HSLNSerre.lean b/HSLNSerre.lean
+index 2636873..8d060eb 100644
+--- a/HSLNSerre.lean
++++ b/HSLNSerre.lean
+@@ -5,7 +5,7 @@ HSLNSerre.lean — the Serre (graded-covariant) derivative, plumbed into the HSL
+ The Lie-derivative figure (viz/hsln_lie_landscape.py / figure 63) exercised the Serre
+ derivative  ϑ_k = D − (k/12)·E₂  numerically: it is the *covariant* version of the grading
+ generator θ = q d/dq, the one that keeps a weight-k form inside the graded ring (it lands in
+-weight k+2). Richard asked us to make the "we use the proven Serre derivative" claim literally
++weight k+2). [REDACTED NAME] asked us to make the "we use the proven Serre derivative" claim literally
+ true in the Lean build rather than only in prose.
+ 
+ This file does NOT re-prove the Serre derivative — mathlib already has it, sorry-free, as
+diff --git a/SECURITY_IMPACT.md b/SECURITY_IMPACT.md
+index 5758f49..36ae0f9 100644
+--- a/SECURITY_IMPACT.md
++++ b/SECURITY_IMPACT.md
+@@ -133,4 +133,4 @@ The only thing to guard against is **misrepresentation**: this result must not b
+ - [Generalized Riemann hypothesis and factoring polynomials over finite fields — ScienceDirect](https://www.sciencedirect.com/science/article/abs/pii/019667749190014P) — GRH-conditional polynomial factoring over finite fields (distinct from integer factoring).
+ - *(Flagged as non-mainstream / unverified, given no weight:)* [Riemann Hypothesis and Polynomial-Time Factorization — preprints.org](https://www.preprints.org/frontend/manuscript/46e724230e7d17cea3762d15b9861a69/download_pub) — non-peer-reviewed preprint claiming an RH-conditional integer-reconstruction scheme; outside consensus.
+ 
+-**Project files referenced:** `/Users/richard.morley-smith/Work/Maths/quantum-neural-network/HSLNHilbertPolya.lean` (theorem statements), `HSLNRH.lean`, `HSLNVerify.lean`.
++**Project files referenced:** `~/Work/Maths/quantum-neural-network/HSLNHilbertPolya.lean` (theorem statements), `HSLNRH.lean`, `HSLNVerify.lean`.
+diff --git a/SpectralTorsion.lean b/SpectralTorsion.lean
+index db5303c..b98a9c3 100644
+--- a/SpectralTorsion.lean
++++ b/SpectralTorsion.lean
+@@ -22,7 +22,7 @@ PROVEN (machine-checked, sorry-free):
+     `gravity_preserves_equilibria` / `zero_eigenvalue_preserved`.
+ 
+ CONJECTURE (NOT a theorem; recorded honestly in prose, never asserted in Lean):
+-  Richard's posited physical interpretation — that this torsion between the "base E8" and the
++  [REDACTED NAME]'s posited physical interpretation — that this torsion between the "base E8" and the
+   "gravity E8", scaled by gravity's magnitude, is what *creates the strong/nuclear force*, and
+   that its magnitude relates to mass. This is a claim about NATURE, not a mathematical
+   statement: there is no derivation here, and it is in tension with established physics (QCD's
+diff --git a/audit_axioms.sh b/audit_axioms.sh
+old mode 100755
+new mode 100644
+diff --git a/math-connections.md b/math-connections.md
+index 4ad03ff..0ca6c96 100644
+--- a/math-connections.md
++++ b/math-connections.md
+@@ -1,6 +1,6 @@
+ # HSLN — Mathematical Connections & Research Threads
+ 
+-Survey of seven areas Richard flagged as adjacent to the Heterotic Spiking Liquid
++Survey of seven areas [REDACTED NAME] flagged as adjacent to the Heterotic Spiking Liquid
+ Network, triaged by how much each actually buys us. Every claim below was fetched
+ from primary sources and triangulated; URLs are inline so they can be audited.
+ 
+@@ -131,7 +131,7 @@ Conclusion: batch, weight, and composition are GPU-trivial ("breakfast"); **genu
+ 
+ ## The "it's just Fourier analysis of a particle" framing (correct skeleton, modular soul)
+ 
+-Richard's read is accurate: the DNA literally *is* the Fourier (q-expansion) coefficients of the form F; the state is a particle in the potential |F|²; computation is its driven motion; readout reads its position/invariants (fig 27). What makes it **more than a generic Fourier-potential reservoir** is that the potential is a **modular form**, which uniquely buys: (1) the **composition algebra** (multiply = convolve = zero-union; direct sum) — algebraically combine potentials *with guarantees*, which arbitrary Fourier potentials cannot; (2) **symmetry** (SL₂(ℤ)/Sp) = free weight-sharing + the invariant readout j; (3) **finite generation** (Sturm bound) — an "infinite" landscape from a finite DNA; (4) the **arithmetic readout** (CM points = integer alphabet). Strip the modular structure → generic nonlinear reservoir; keep it → composable, structured. The modular/E8 part is the soul.
++[REDACTED NAME]'s read is accurate: the DNA literally *is* the Fourier (q-expansion) coefficients of the form F; the state is a particle in the potential |F|²; computation is its driven motion; readout reads its position/invariants (fig 27). What makes it **more than a generic Fourier-potential reservoir** is that the potential is a **modular form**, which uniquely buys: (1) the **composition algebra** (multiply = convolve = zero-union; direct sum) — algebraically combine potentials *with guarantees*, which arbitrary Fourier potentials cannot; (2) **symmetry** (SL₂(ℤ)/Sp) = free weight-sharing + the invariant readout j; (3) **finite generation** (Sturm bound) — an "infinite" landscape from a finite DNA; (4) the **arithmetic readout** (CM points = integer alphabet). Strip the modular structure → generic nonlinear reservoir; keep it → composable, structured. The modular/E8 part is the soul.
+ 
+ ## Two kinds of composition — and grokking (figure 29, `viz/skill_compose.py`)
+ 
+@@ -169,7 +169,7 @@ Together with figs 31–33 and `HSLNZeta.lean`, this is now a coherent number-th
+ 
+ ## The DNA algebra — composition IS a ring, and we have a group (figure 37, `viz/dna_algebra.py`; `HSLNAlgebra.lean`)
+ 
+-Richard's instinct ("we have all the operations — we could derive a group") is exactly right, and the structure is classical: a DNA is an **arithmetic function** f : ℕ → ℝ (the Dirichlet/q-expansion coefficients we train), and under **(pointwise +, Dirichlet convolution ×)** these form the **commutative ring of arithmetic functions** (the Dirichlet ring). Our compose-operations *are* the ring operations. Machine-checked in `HSLNAlgebra.lean` against mathlib (`ArithmeticFunction ℝ` is a `CommRing`), sorry-free. So "whatever we can teach independently, we can compose" is literally ring algebra. Name a small alphabet of DNAs and reason about them:
++[REDACTED NAME]'s instinct ("we have all the operations — we could derive a group") is exactly right, and the structure is classical: a DNA is an **arithmetic function** f : ℕ → ℝ (the Dirichlet/q-expansion coefficients we train), and under **(pointwise +, Dirichlet convolution ×)** these form the **commutative ring of arithmetic functions** (the Dirichlet ring). Our compose-operations *are* the ring operations. Machine-checked in `HSLNAlgebra.lean` against mathlib (`ArithmeticFunction ℝ` is a `CommRing`), sorry-free. So "whatever we can teach independently, we can compose" is literally ring algebra. Name a small alphabet of DNAs and reason about them:
+ 
+ - **DNA_δ** = [1,0,0,…] — the convolution identity (the do-nothing DNA).
+ - **DNA_ζ** = all ones — the Riemann generator, ζ(s)=Σ1/nˢ.
+@@ -180,7 +180,7 @@ Richard's instinct ("we have all the operations — we could derive a group") is
+ Four facts, each **verified to machine precision** in the figure and **proven in Lean**:
+ 1. `ζ * μ = δ` — the group inverse.
+ 2. `ζ * ζ = d(n)` — the divisor-count function (ζ² in the ring). (`zeta_squared_counts_divisors`.)
+-3. **Modular arithmetic ⊗ the zeta generator → sum of two squares.** Composing the per-prime χ-twisted Euler factors builds L(s,χ₄) (coefficients χ(n)); then `ζ * χ = r₂(n)/4`, i.e. **the number of ways n is a sum of two squares** (Jacobi's two-square theorem, r₂(n)=4∑_{d|n}χ₄(d)). Equivalently ζ·L(s,χ₄) is the **Dedekind zeta of the Gaussian integers ℤ[i]** — the abelian factorization ζ_{ℚ(i)}=ζ·L(·,χ₄). Counting lattice points on circles falls out of "modular arithmetic composed with the generator," and L(1,χ₄)=1−⅓+⅕−…=π/4 (Leibniz). This is exactly the "interesting behaviour when zeta meets modular arithmetic" Richard predicted.
++3. **Modular arithmetic ⊗ the zeta generator → sum of two squares.** Composing the per-prime χ-twisted Euler factors builds L(s,χ₄) (coefficients χ(n)); then `ζ * χ = r₂(n)/4`, i.e. **the number of ways n is a sum of two squares** (Jacobi's two-square theorem, r₂(n)=4∑_{d|n}χ₄(d)). Equivalently ζ·L(s,χ₄) is the **Dedekind zeta of the Gaussian integers ℤ[i]** — the abelian factorization ζ_{ℚ(i)}=ζ·L(·,χ₄). Counting lattice points on circles falls out of "modular arithmetic composed with the generator," and L(1,χ₄)=1−⅓+⅕−…=π/4 (Leibniz). This is exactly the "interesting behaviour when zeta meets modular arithmetic" [REDACTED NAME] predicted.
+ 4. **The Lie/log-derivative gives the primes.** The map `D f(n)=f(n)·log n` is a derivation of the ring (Leibniz holds because log(de)=log d+log e). `D(ζ)=log`, and normalising by ζ⁻¹=μ gives `log * μ = Λ` — this is **−ζ'/ζ = Λ**, the von Mangoldt prime spectrum that drives the explicit formula (fig 35). (`vonMangoldt_mul_zeta`, `log_mul_moebius_eq_vonMangoldt`, Lean.)
+ 
+ The point: DNA_ζ, DNA_μ, DNA_Λ, DNA_χ are abstract handles in a ring; new number theory (divisors, Gaussian integers, the primes) is **synthesised by composing them**. Direct sum / tensor of the *dynamical* systems corresponds to **multiplication of their L-functions** (Dedekind ζ = product of Dirichlet L's), so the geometric composition and the Dirichlet-ring product are the same operation in two realisations.
+@@ -512,7 +512,7 @@ the **integral** Hodge conjecture is FALSE (Atiyah–Hirzebruch 1962, via topolo
+ torsion — note the K-theory link!), so ℚ is essential; the **Kähler** version is FALSE (Voisin
+ 2002); the proven case is **Lefschetz (1,1)** (`k=1`, divisors). Tested in `viz/hsln_hodge.py`.
+ 
+-**Integral Hodge modulo torsion — and why E8×E8 is the clean regime (Richard's observation).**
++**Integral Hodge modulo torsion — and why E8×E8 is the clean regime ([REDACTED NAME]'s observation).**
+ The Atiyah–Hirzebruch counterexamples to the *integral* Hodge conjecture are **torsion classes**,
+ detected by topological-K-theory torsion — exactly the free/torsion split that `HSLNKTheory`'s
+ `K₀(point)=ℤ` and reduced `K̃₀` already make precise. So the refined statement is "integral Hodge
+diff --git a/verify.sh b/verify.sh
+old mode 100755
+new mode 100644
+diff --git a/viz/explicit.py b/viz/explicit.py
+index e264a6b..e10eccd 100644
+--- a/viz/explicit.py
++++ b/viz/explicit.py
+@@ -46,11 +46,11 @@ def psi_K(xs, g, K):
+ 
+ 
+ def run(make_fig=True):
+-    g = get_zeros(500)
++    g = get_zeros(5000)
+     xs = np.linspace(1.6, 30.0, 4000)
+     psi_true, jumps = true_psi(xs)
+     print(f"reconstructing psi(x) on [1.6,30] from up to {len(g)} zeros.")
+-    for K in (1, 10, 50, 200):
++    for K in (1, 10, 50, 200, 1000, 10000):
+         err = np.abs(psi_K(xs, g, K) - psi_true).mean()
+         print(f"  K={K:4d} zeros: mean |psi_K - psi| = {err:.3f}")
+ 
+diff --git a/viz/factor_battery.py b/viz/factor_battery.py
+index 1324d33..de9b137 100644
+--- a/viz/factor_battery.py
++++ b/viz/factor_battery.py
+@@ -192,11 +192,11 @@ def main():
+     print(f"N probable-prime? {is_probable_prime(N)}")
+ 
+     methods = [
+-        lambda: trial_division(N, 10_000_000, 90),
+-        lambda: fermat(N, 5_000_000, 60),
+-        lambda: pollard_pm1(N, 3_000_000, 120),
+-        lambda: williams_pp1(N, 1_000_000, 120),
+-        lambda: pollard_brent(N, 120, seed=2),
++        # lambda: trial_division(N, 10_000_000, 90),
++        # lambda: fermat(N, 5_000_000, 60),
++        # lambda: pollard_pm1(N, 3_000_000, 120),
++        # lambda: williams_pp1(N, 1_000_000, 120),
++        # lambda: pollard_brent(N, 120, seed=2),
+         lambda: pollard_brent(N, 120, seed=3),
+     ]
+     for m in methods:
+diff --git a/viz/factor_via_identities.py b/viz/factor_via_identities.py
+index 505b2eb..878df26 100644
+--- a/viz/factor_via_identities.py
++++ b/viz/factor_via_identities.py
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env python3
+ """factor_via_identities.py — try to factor `N = pq` using our bridge identities.
+ 
+-Hypothesis (Richard's): the identities `φ = Id * μ`, `(ζ * ζ) = d`, `log * μ = Λ` etc.
++Hypothesis ([REDACTED NAME]'s): the identities `φ = Id * μ`, `(ζ * ζ) = d`, `log * μ = Λ` etc.
+ might analytically simplify factoring of `N = pq`.
+ 
+ What we test:
+diff --git a/viz/hecke_compression.py b/viz/hecke_compression.py
+index 7de82e1..aa34e8e 100644
+--- a/viz/hecke_compression.py
++++ b/viz/hecke_compression.py
+@@ -44,7 +44,7 @@ mpl.rcParams.update({
+     'font.family': 'sans-serif',
+ })
+ 
+-FIG_DIR = Path('/Users/richard.morley-smith/Work/Maths/quantum-neural-network/viz/figures')
++FIG_DIR = Path('~/Work/Maths/quantum-neural-network/viz/figures')
+ 
+ 
+ # ────────────────────────────────────────────────────────────────────────────────
+diff --git a/viz/hsln_cup_product.py b/viz/hsln_cup_product.py
+index 44f7e4a..18abcff 100644
+--- a/viz/hsln_cup_product.py
++++ b/viz/hsln_cup_product.py
+@@ -10,7 +10,7 @@ closed under cup product.
+ Read on the factoring detector: a model trained to A spikes at the prime factors of A; one
+ trained to B spikes at the factors of B. Their cup product spikes at factors(A) ∪ factors(B).
+ 
+-Richard's question: can cup-producting landscapes ever surface a factor that NEITHER parent
++[REDACTED NAME]'s question: can cup-producting landscapes ever surface a factor that NEITHER parent
+ had — in particular a factor of a hard target N?
+ 
+ What we test:
+diff --git a/viz/hsln_dna_matrix_factor.py b/viz/hsln_dna_matrix_factor.py
+index 44ac2e2..ad0098b 100644
+--- a/viz/hsln_dna_matrix_factor.py
++++ b/viz/hsln_dna_matrix_factor.py
+@@ -1,7 +1,7 @@
+ """
+ DNA → matrix → factor the MATRIX. Does matrix factorisation reach the primes?
+ 
+-Richard's idea: take the DNA of the model trained to N, lay it out as a matrix, and factor
++[REDACTED NAME]'s idea: take the DNA of the model trained to N, lay it out as a matrix, and factor
+ THAT matrix instead of the integer. Matrix factorisation (LU, QR, SVD, eigen) is polynomial
+ and easy — so if the integer's factors fell out of it, we'd be done.
+ 
+diff --git a/viz/hsln_e8_torsion_factor.py b/viz/hsln_e8_torsion_factor.py
+index 3fd205e..8ec80b7 100644
+--- a/viz/hsln_e8_torsion_factor.py
++++ b/viz/hsln_e8_torsion_factor.py
+@@ -1,7 +1,7 @@
+ """
+ E8 × Siegel factoring — the projection reveals the prime factors.
+ 
+-Richard's conjecture (geometric form): take N, drive a "gravity DNA" to pull a marker
++[REDACTED NAME]'s conjecture (geometric form): take N, drive a "gravity DNA" to pull a marker
+ onto N in the space; hold E8 × E8 and contort the second copy (torsion); project back
+ down and the special points on the way to N are its prime factors.
+ 
+diff --git a/viz/hsln_lie_landscape.py b/viz/hsln_lie_landscape.py
+index 34c28ee..e986a51 100644
+--- a/viz/hsln_lie_landscape.py
++++ b/viz/hsln_lie_landscape.py
+@@ -1,7 +1,7 @@
+ """
+ Lie derivative (and 2nd Lie derivative) of the trained model's complete landscape.
+ 
+-Richard's point: we're in a graded ring M_* = ⊕_k M_k whose symmetry we formally proved
++[REDACTED NAME]'s point: we're in a graded ring M_* = ⊕_k M_k whose symmetry we formally proved
+ (HSLNHodge: Hodge classes are a graded subring closed under cup product; HSLNKTheory:
+ Chern character is a ring hom). The grading's infinitesimal generator is the Euler /
+ Lie-derivative operator (lie_derivative.py, figure 38):
+diff --git a/viz/hsln_quantum_state.py b/viz/hsln_quantum_state.py
+index a16e7e8..b20c349 100644
+--- a/viz/hsln_quantum_state.py
++++ b/viz/hsln_quantum_state.py
+@@ -3,7 +3,7 @@
+ hsln_quantum_state.py — can the HSLN simulate a quantum state? An experiment.
+ =============================================================================
+ 
+-Posit (Richard): our new sorry-free results let the HSLN *be* a quantum state, not just
++Posit ([REDACTED NAME]): our new sorry-free results let the HSLN *be* a quantum state, not just
+ analogize one. Test that concretely against the textbook axioms of a quantum state
+ (en.wikipedia.org/wiki/Quantum_state).
+ 
+diff --git a/viz/hsln_reverse_factor.py b/viz/hsln_reverse_factor.py
+index c008208..90ec9a1 100644
+--- a/viz/hsln_reverse_factor.py
++++ b/viz/hsln_reverse_factor.py
+@@ -1,7 +1,7 @@
+ """
+ Reverse the test: start at N, drive to 1 — where are the spikes, and is it fast?
+ 
+-Richard's question: the forward test drives 1 → N and the roots-of-unity projection
++[REDACTED NAME]'s question: the forward test drives 1 → N and the roots-of-unity projection
+ spikes at the prime factors. Surely it's reversible — so run it N → 1. And: pray it
+ isn't a polynomial-time factoring algorithm that way round.
+ 
+@@ -18,7 +18,7 @@ Two honest findings, both shown here:
+   proper divisor) costs ~N. Both are EXPONENTIAL in the bit-length of N — a straight
+   line on the log-evaluations-vs-bits plot. Reversing is no shortcut (it's worse).
+ 
+-  The twist: the structure Richard spotted is real and deep. The roots-of-unity /
++  The twist: the structure [REDACTED NAME] spotted is real and deep. The roots-of-unity /
+   Fourier view of divisibility IS what makes factoring polynomial — but only with a
+   *quantum* Fourier transform (Shor 1994, period finding). Classically you pay the
+   exponential scan. So: a beautiful picture, and RSA is safe on classical hardware.
+diff --git a/viz/hsln_tau_compose.py b/viz/hsln_tau_compose.py
+index efae9b1..d2378e2 100644
+--- a/viz/hsln_tau_compose.py
++++ b/viz/hsln_tau_compose.py
+@@ -1,6 +1,6 @@
+ """hsln_tau_compose.py — push N through Ramanujan τ, then COMPOSE with HSLN (no classical methods).
+ 
+-The idea under test (Richard's): τ is multiplicative, τ(N)=τ(p)·τ(q). Encode the τ-values with
++The idea under test ([REDACTED NAME]'s): τ is multiplicative, τ(N)=τ(p)·τ(q). Encode the τ-values with
+ hsln_prime_dna's concept (pos(x)=frac(log₂ x) → spike → DNA) and COMPOSE the DNAs (hsln.tensor).
+ 
+ What this script shows, on the ground-truth small semiprime N0 = 47·53:
+@@ -24,7 +24,7 @@ HERE = Path(__file__).parent
+ sys.path.insert(0, str(HERE))
+ 
+ import hsln
+-import hsln_prime_dna as hpd       # <-- the concept Richard pointed to
++import hsln_prime_dna as hpd       # <-- the concept [REDACTED NAME] pointed to
+ 
+ 
+ def build_tau(M: int) -> dict[int, int]:
+diff --git a/viz/lie_derivative.py b/viz/lie_derivative.py
+index b8e4726..1786272 100644
+--- a/viz/lie_derivative.py
++++ b/viz/lie_derivative.py
+@@ -1,6 +1,6 @@
+ """The Lie derivative of the system — two faces of one generator.
+ 
+-Richard asked: "what's the Lie derivative of the system? can we teach the model its own Lie
++[REDACTED NAME] asked: "what's the Lie derivative of the system? can we teach the model its own Lie
+ derivative?" There are two Lie derivatives at play, and the model knows both.
+ 
+ (1) ALONG THE FLOW (the dynamics).  The HSLN is a gradient flow  Ż = −∇E  on the modular energy

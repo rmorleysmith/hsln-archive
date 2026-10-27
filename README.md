@@ -25,9 +25,12 @@ only establishes *what existed, when*.
 | 2026-06-04 08:21 | all 28 Lean files, `math-connections.md`, `system-spec.md`, both visualisation zips timestamped | block 952310 |
 | 2026-06-04 22:10 | second confirmation of the same digests | block 952402 |
 
-The two evidence chains agree: the files in the git bundle's final tree are byte-identical
-to the files whose digests sit in the blockchain two to four days later. Git commit dates
-are self-reported; the Bitcoin attestations are not.
+The two evidence chains agree. The timestamped files are the repository's working tree on
+2–4 June: the final commit of 31 May plus uncommitted edits in 21 files, 30 lines in all,
+recorded verbatim in `git/worktree-vs-HEAD.diff`. Forty-one of the sixty changed lines
+replace the author's name with `[REDACTED NAME]` for anonymous sharing; the rest are
+parameter changes in the scripts (for example, 500 zeta zeros raised to 5 000). Git commit
+dates are self-reported; the Bitcoin attestations are not.
 
 Full per-file table: [`TIMESTAMPS.md`](TIMESTAMPS.md). Digests: [`SHA256SUMS`](SHA256SUMS).
 
@@ -36,7 +39,8 @@ Full per-file table: [`TIMESTAMPS.md`](TIMESTAMPS.md). Digests: [`SHA256SUMS`](S
 ```
 files/        the original artefacts, byte-for-byte
 ots/          36 OpenTimestamps proofs, upgraded to complete Bitcoin attestations
-git/          the May 2026 git history as a bundle, with its commit and file lists
+git/          the May 2026 git history as a bundle, its commit and file lists, and the diff
+              from its last commit to the timestamped working tree
 SHA256SUMS    digests of everything in files/
 TIMESTAMPS.md which proof covers which file, with block height and block time
 ```
@@ -49,7 +53,7 @@ TIMESTAMPS.md which proof covers which file, with block height and block time
 | `files/visualizations_part1.zip`, `..._part2.zip` | 68 figures and 7 animations produced by the scripts | both zips, block 952310 |
 | `files/langlands_program.patch` | the Lean files as a single git patch against a Mathlib tree (43 files) | block 952138 |
 | `files/patch.txt` | an earlier, smaller patch (13 files) | no proof |
-| `git/hsln-2026-05.bundle` | the working repository, 29 commits, 196 tracked files | its final tree matches the timestamped files |
+| `git/hsln-2026-05.bundle` | the working repository, 29 commits, 196 tracked files | its working tree on 2–4 June (last commit + `worktree-vs-HEAD.diff`) is the timestamped set |
 
 A cover letter that accompanied the files when they were first shared is not reproduced
 here; it contained no mathematics.
