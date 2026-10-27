@@ -1,6 +1,6 @@
 # OpenTimestamps attestations
 
-Each `.ots` file in `ots/` is a complete OpenTimestamps proof (upgraded 2026-10-27) that the SHA-256 digest below existed before the stated Bitcoin block. Verify with `ots verify ots/<name>.ots -f <file>` (needs a Bitcoin node) or inspect with `ots info`. Block times are the block header times (UTC), looked up on blockstream.info.
+Each `.ots` file in `ots/` is a complete OpenTimestamps proof (upgraded 2026-10-27) that the SHA-256 digest below existed before the stated Bitcoin block. Verify with `ots verify ots/<name>.ots -f <file>` (needs a Bitcoin node) or inspect with `ots info`. Block times are the block header times (UTC), looked up on blockstream.info. The table gives the earliest attesting block per file; every proof made on 4 June (block 952310) also carries a second attestation at block 952402 (2026-06-04 22:10 UTC), and the 2 June proofs carry 952139 and 952165 as well.
 
 | Earliest block | Block time | Proof file | SHA-256 | Covers |
 |---|---|---|---|---|
